@@ -1,3 +1,5 @@
 mod scene_file_parser;
-
-fn main() {}
+mod geometry;
+mod def;
+fn main() {
+}

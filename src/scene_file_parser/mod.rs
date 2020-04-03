@@ -2,7 +2,6 @@ pub mod lex;
 
 use lex::{parse_lex, Token, TokenWithPos};
 use std::collections::VecDeque;
-use std::fs;
 use std::path::Path;
 
 #[derive(Debug)]
