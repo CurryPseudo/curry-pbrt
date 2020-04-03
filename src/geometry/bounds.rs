@@ -1,6 +1,6 @@
+use super::{Point, Point2i, Transformable, Vector, Transform};
 use crate::def::Float;
 use crate::def::Integer;
-use super::{Point, Vector, Point2i};
 use alga::general::{ClosedAdd, ClosedDiv, ClosedMul, ClosedSub};
 use nalgebra::{
     allocator::Allocator,
@@ -199,7 +199,6 @@ impl<T: BoundsTrait> Bounds3<T> {
     }
 }
 
-
 pub type Bounds2i = Bounds<Integer, U2>;
 
 impl Bounds2i {
@@ -225,16 +224,24 @@ fn lerp<T: BoundsTrait>(t: T, min: T, max: T) -> T {
 fn min<T: PartialOrd>(lhs: T, rhs: T) -> T {
     if rhs < lhs {
         rhs
-    }
-    else {
+    } else {
         lhs
     }
 }
 fn max<T: PartialOrd>(lhs: T, rhs: T) -> T {
     if rhs > lhs {
         rhs
-    }
-    else {
+    } else {
         lhs
+    }
+}
+
+impl Transformable for Bounds3f {
+    fn apply(self, transform: &Transform) -> Self {
+        let mut r = Self::from(self.min.apply(transform));
+        for i in 1..8 {
+            r = r | &self.corner(i)
+        }
+        r
     }
 }
