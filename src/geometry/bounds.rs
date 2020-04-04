@@ -22,8 +22,8 @@ pub struct Bounds<T: BoundsTrait, N: DimName>
 where
     DefaultAllocator: Allocator<T, N>,
 {
-    min: Point<T, N>,
-    max: Point<T, N>,
+    pub min: Point<T, N>,
+    pub max: Point<T, N>,
 }
 
 impl<T: BoundsTrait, N: DimName> Bounds<T, N>

@@ -2,6 +2,7 @@ use super::{Transform, Transformable};
 use crate::def::Float;
 use crate::geometry::point::Point3f;
 use crate::geometry::vector::Vector3f;
+use num_traits::Bounded;
 
 #[derive(Debug, Clone)]
 pub struct Ray {
@@ -11,6 +12,9 @@ pub struct Ray {
 }
 
 impl Ray {
+    pub fn new_od(o: Point3f, d: Vector3f) -> Self {
+        Self { o, d, t_max: Float::max_value() }
+    }
     pub fn new(o: Point3f, d: Vector3f, t_max: Float) -> Self {
         Self { o, d, t_max }
     }

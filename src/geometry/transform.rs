@@ -55,6 +55,16 @@ impl Transform {
             || !is_norm(Vector3f::new(0., 1., 0.).apply(&self))
             || !is_norm(Vector3f::new(0., 0., 1.).apply(&self))
     }
+    pub fn perspective(fov: Float, near: Float, far: Float) -> Self {
+        let inv_tan_half_fov = 1. / (fov.to_radians() / 2.).tan();
+        let t = far / (far - near);
+        Self::from(Matrix4::from([
+            [inv_tan_half_fov, 0., 0., 0.],
+            [0., inv_tan_half_fov, 0., 0.],
+            [0., 0., t, -t * near],
+            [0., 0., 1., 0.],
+        ]))
+    }
 }
 fn is_norm(v: Vector3f) -> bool {
     let l = v.magnitude();
@@ -83,6 +93,6 @@ pub trait Transformable {
 
 impl Transformable for Transform {
     fn apply(self, transform: &Transform) -> Self {
-        Self::new(self.m * transform.m, transform.m_inv * self.m_inv)
+        Self::new(transform.m * self.m, self.m_inv * transform.m_inv)
     }
 }
