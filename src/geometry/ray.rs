@@ -2,12 +2,12 @@ use super::{Transform, Transformable};
 use crate::def::Float;
 use crate::geometry::point::Point3f;
 use crate::geometry::vector::Vector3f;
-use std::ops::Index;
 
+#[derive(Debug, Clone)]
 pub struct Ray {
-    o: Point3f,
-    d: Vector3f,
-    t_max: Float,
+    pub o: Point3f,
+    pub d: Vector3f,
+    pub t_max: Float,
 }
 
 impl Ray {

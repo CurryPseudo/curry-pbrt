@@ -1,11 +1,11 @@
-use super::{Point, Point2i, Transformable, Vector, Transform};
+use super::{Point, Point2i, Point3f, Ray, Transform, Transformable, Vector, Vector3f};
 use crate::def::Float;
 use crate::def::Integer;
 use alga::general::{ClosedAdd, ClosedDiv, ClosedMul, ClosedSub};
 use nalgebra::{
     allocator::Allocator,
     base::dimension::{U2, U3},
-    DefaultAllocator, DimName, Scalar,
+    DefaultAllocator, DimName, Scalar, Vector3,
 };
 use num_traits::{Bounded, FromPrimitive};
 use std::ops::{BitAnd, BitOr, Index};
@@ -235,6 +235,13 @@ fn max<T: PartialOrd>(lhs: T, rhs: T) -> T {
         lhs
     }
 }
+fn is_positive(f: Float) -> usize {
+    if f >= 0. {
+        1
+    } else {
+        0
+    }
+}
 
 impl Transformable for Bounds3f {
     fn apply(self, transform: &Transform) -> Self {
@@ -243,5 +250,60 @@ impl Transformable for Bounds3f {
             r = r | &self.corner(i)
         }
         r
+    }
+}
+
+impl Bounds3f {
+    pub fn intersect_predicate(&self, ray: &Ray) -> bool {
+        self.intersect_predicate_cached(&RayIntersectCache::from(ray.clone()))
+    }
+    pub fn intersect_predicate_cached(&self, ray: &RayIntersectCache) -> bool {
+        let o = ray.ray.o;
+        let t_min = (self[ray.is_negative_d.x].x - o.x) * ray.inverse_d.x;
+        let t_max = (self[ray.is_positive_d.x].x - o.x) * ray.inverse_d.x;
+        let t_y_min = (self[ray.is_negative_d.y].y - o.y) * ray.inverse_d.y;
+        let t_y_max = (self[ray.is_positive_d.y].y - o.y) * ray.inverse_d.y;
+        if t_min > t_y_max || t_y_min > t_max {
+            return false;
+        }
+        let t_min = min(t_min, t_y_min);
+        let t_max = max(t_max, t_y_max);
+
+        let t_z_min = (self[ray.is_negative_d.z].z - o.z) * ray.inverse_d.z;
+        let t_z_max = (self[ray.is_positive_d.z].z - o.z) * ray.inverse_d.z;
+
+        if t_min > t_z_max || t_z_min > t_max {
+            return false;
+        }
+        t_min < ray.ray.t_max && t_max > 0.
+    }
+}
+
+pub struct RayIntersectCache {
+    ray: Ray,
+    inverse_d: Vector3f,
+    is_positive_d: Vector3<usize>,
+    is_negative_d: Vector3<usize>,
+}
+impl RayIntersectCache {
+    pub fn origin_ray(&self) -> &Ray {
+        &self.ray
+    }
+}
+
+impl From<Ray> for RayIntersectCache {
+    fn from(ray: Ray) -> Self {
+        let o = ray.o;
+        let d = ray.d;
+        let t_max = ray.t_max;
+        let inverse_d = Vector3f::new(1. / d.x, 1. / d.y, 1. / d.z);
+        let is_positive_d = Vector3::new(is_positive(d.x), is_positive(d.y), is_positive(d.z));
+        let is_negative_d = Vector3::from_element(1) - is_positive_d;
+        Self {
+            ray,
+            inverse_d,
+            is_positive_d,
+            is_negative_d,
+        }
     }
 }
