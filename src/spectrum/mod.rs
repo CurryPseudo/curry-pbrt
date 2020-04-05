@@ -1,10 +1,12 @@
+mod rgb_spectrum;
 use crate::{def::Float, math::clamp};
-use ops::Index;
 use std::ops;
+pub use rgb_spectrum::*;
+use ops::Index;
 
 #[derive(Clone)]
 pub struct CoefficientSpectrum {
-    c: Box<[Float]>,
+    pub c: Box<[Float]>,
 }
 
 impl CoefficientSpectrum {
@@ -12,6 +14,9 @@ impl CoefficientSpectrum {
         Self {
             c: vec![v; n].into_boxed_slice(),
         }
+    }
+    pub fn len(&self) -> usize {
+        self.c.len()
     }
     pub fn is_black(&self) -> bool {
         for i in 0..self.c.len() {
@@ -55,6 +60,11 @@ impl CoefficientSpectrum {
     }
 }
 
+impl From<Box<[Float]>> for CoefficientSpectrum {
+    fn from(c: Box<[Float]>) -> Self {
+        Self {c}
+    }
+}
 impl Index<usize> for CoefficientSpectrum {
     type Output = Float;
     fn index(&self, index: usize) -> &Self::Output {
@@ -99,3 +109,5 @@ impl_op_commutative!(*|a: CoefficientSpectrum, b: Float| -> CoefficientSpectrum 
 impl_op_commutative!(/ |a: CoefficientSpectrum, b: Float| -> CoefficientSpectrum {
     a.map(|x| x / b)
 });
+
+pub type Spectrum = RGBSpectrum;
