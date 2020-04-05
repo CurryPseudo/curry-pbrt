@@ -1,4 +1,5 @@
-use super::{Point, Point2i, Point3f, Ray, Transform, Transformable, Vector, Vector3f};
+use super::{Point, Point2i, Ray, Transform, Transformable, Vector, Vector3f};
+use crate::math::lerp;
 use crate::def::Float;
 use crate::def::Integer;
 use alga::general::{ClosedAdd, ClosedDiv, ClosedMul, ClosedSub};
@@ -217,9 +218,6 @@ pub type Bounds2f = Bounds<Float, U2>;
 pub type Bounds3i = Bounds<Integer, U3>;
 pub type Bounds3f = Bounds<Float, U3>;
 
-fn lerp<T: BoundsTrait>(t: T, min: T, max: T) -> T {
-    min * t + max * (T::from_i32(1).unwrap() - t)
-}
 
 fn min<T: PartialOrd>(lhs: T, rhs: T) -> T {
     if rhs < lhs {
