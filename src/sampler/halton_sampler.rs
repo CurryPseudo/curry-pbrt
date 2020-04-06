@@ -1,7 +1,8 @@
-use crate::def::Float;
+use crate::{geometry::Vector2f, def::Float};
+use std::collections::HashMap;
 
-fn radical_inverse_index(x: u32, base_index: usize) -> Float {
-    static prims: [u32; 1000] = [
+fn radical_inverse_index(x: usize, base_index: usize) -> Float {
+    static prims: [usize; 1000] = [
         2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89,
         97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181,
         191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281,
@@ -73,7 +74,7 @@ fn radical_inverse_index(x: u32, base_index: usize) -> Float {
     }
     radical_inverse(x, prims[base_index])
 }
-fn radical_inverse(mut x: u32, base: u32) -> Float {
+fn radical_inverse(mut x: usize, base: usize) -> Float {
     let mut accumulated = 0;
     let mut digit_count = 0;
     while x != 0 {
@@ -84,14 +85,38 @@ fn radical_inverse(mut x: u32, base: u32) -> Float {
     }
     accumulated as Float / (base as Float).powf(digit_count as Float)
 }
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn redical_inverse_works() {
-        for i in 0..12 {
-            let point = (radical_inverse_index(i, 0), radical_inverse_index(i, 1));
-            println!("{:?}", point);
+pub struct HaltonSampler {
+    sample_per_pixel: usize,
+    counts: HashMap<(usize, usize), usize>
+}
+impl HaltonSampler {
+    pub fn new(sample_per_pixel: usize) -> Self {
+        Self {
+            sample_per_pixel,
+            counts: HashMap::new()
         }
+    }
+    pub fn get_1d(&mut self, pixel_index: usize, sample_index: usize) -> Float {
+        let count = self.counts.entry((pixel_index, sample_index)).or_insert(0);
+        let r = Self::sample(pixel_index * self.sample_per_pixel + sample_index, count.clone());
+        *count += 1;
+        if r == 1. {
+            0.9999999999999999
+        }
+        else {
+            r
+        }
+    }
+    pub fn get_2d(&mut self, pixel_index: usize, sample_index: usize) -> Vector2f {
+        Vector2f::new(self.get_1d(pixel_index, sample_index), self.get_1d(pixel_index, sample_index))
+    }
+    pub fn get_1ds(&mut self, pixel_index: usize, sample_index: usize, count: usize) -> Vec<Float> {
+        (0..count).into_iter().map(|_| self.get_1d(pixel_index, sample_index)).collect()
+    }
+    pub fn get_2ds(&mut self, pixel_index: usize, sample_index: usize, count: usize) -> Vec<Vector2f> {
+        (0..count).into_iter().map(|_| self.get_2d(pixel_index, sample_index)).collect()
+    }
+    fn sample(index: usize, dim: usize) -> Float {
+        radical_inverse_index(index, dim)
     }
 }
