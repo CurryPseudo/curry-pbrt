@@ -1,5 +1,6 @@
 use crate::{geometry::Vector2f, def::Float};
 use std::collections::HashMap;
+use super::Sampler;
 
 fn radical_inverse_index(x: usize, base_index: usize) -> Float {
     static prims: [usize; 1000] = [
@@ -87,36 +88,20 @@ fn radical_inverse(mut x: usize, base: usize) -> Float {
 }
 pub struct HaltonSampler {
     sample_per_pixel: usize,
-    counts: HashMap<(usize, usize), usize>
 }
 impl HaltonSampler {
     pub fn new(sample_per_pixel: usize) -> Self {
         Self {
             sample_per_pixel,
-            counts: HashMap::new()
         }
-    }
-    pub fn get_1d(&mut self, pixel_index: usize, sample_index: usize) -> Float {
-        let count = self.counts.entry((pixel_index, sample_index)).or_insert(0);
-        let r = Self::sample(pixel_index * self.sample_per_pixel + sample_index, count.clone());
-        *count += 1;
-        if r == 1. {
-            0.9999999999999999
-        }
-        else {
-            r
-        }
-    }
-    pub fn get_2d(&mut self, pixel_index: usize, sample_index: usize) -> Vector2f {
-        Vector2f::new(self.get_1d(pixel_index, sample_index), self.get_1d(pixel_index, sample_index))
-    }
-    pub fn get_1ds(&mut self, pixel_index: usize, sample_index: usize, count: usize) -> Vec<Float> {
-        (0..count).into_iter().map(|_| self.get_1d(pixel_index, sample_index)).collect()
-    }
-    pub fn get_2ds(&mut self, pixel_index: usize, sample_index: usize, count: usize) -> Vec<Vector2f> {
-        (0..count).into_iter().map(|_| self.get_2d(pixel_index, sample_index)).collect()
     }
     fn sample(index: usize, dim: usize) -> Float {
         radical_inverse_index(index, dim)
+    }
+}
+impl Sampler for HaltonSampler {
+    fn get_sample(&mut self, pixel_index: usize, sample_index: usize, dim: usize) -> Float {
+        let r = Self::sample(pixel_index * self.sample_per_pixel + sample_index, dim);
+        r
     }
 }

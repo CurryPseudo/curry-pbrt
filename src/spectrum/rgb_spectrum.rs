@@ -2,7 +2,7 @@ use super::CoefficientSpectrum;
 use crate::def::Float;
 use derive_more::{Add, Div, Into, Mul, Sub, Index};
 
-#[derive(Index, Into, Add, Mul, Div, Sub)]
+#[derive(Clone, Index, Into, Add, Mul, Div, Sub)]
 pub struct RGBSpectrum(CoefficientSpectrum);
 
 impl RGBSpectrum {

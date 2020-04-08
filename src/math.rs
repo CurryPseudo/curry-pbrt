@@ -1,5 +1,6 @@
 use alga::general::{ClosedAdd, ClosedMul, ClosedSub};
 use num_traits::FromPrimitive;
+use crate::def::Float;
 
 pub fn lerp<T: FromPrimitive + ClosedMul + ClosedAdd + ClosedSub + Copy>(
     t: T,
@@ -17,3 +18,6 @@ pub fn clamp<T: PartialOrd>(t: T, min: T, max: T) -> T {
         t
     }
 }
+
+pub static PI: Float = 3.14159265358979323846;
+pub static INV_PI: Float = 0.31830988618379067154;
