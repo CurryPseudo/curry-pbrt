@@ -3,6 +3,7 @@ pub mod lex;
 use lex::{parse_lex, Token, TokenWithPos};
 use std::collections::VecDeque;
 use std::path::Path;
+use crate::def::{Integer, Float};
 
 #[derive(Debug)]
 pub struct FileBlock(Vec<BlockSegment>);
@@ -158,8 +159,8 @@ impl BasicTypes {
 #[derive(Debug)]
 pub enum BasicType {
     BasicString(String),
-    BasicFloat(f32),
-    BasicInteger(i32),
+    BasicFloat(Float),
+    BasicInteger(Integer),
 }
 impl BasicType {
     fn from_lex(token: TokenWithPos) -> Self {
@@ -178,13 +179,4 @@ impl BasicType {
 pub fn read_scene(file: &Path) -> FileBlock {
     let tokens = parse_lex(file);
     FileBlock::from_lex(tokens)
-}
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn read_scene_work() {
-        let file_block = read_scene(Path::new("scenes/landscape/view-0.pbrt"));
-        //println!("{:#?}", file_block);
-    }
 }

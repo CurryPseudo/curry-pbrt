@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
+use crate::def::{Float, Integer};
 #[derive(Debug)]
 pub struct TokenWithPos {
     pub token: Token,
@@ -24,8 +25,8 @@ pub enum Token {
     BlockBegin(String),
     BlockEnd(String),
     String(String),
-    Integer(i32),
-    Float(f32),
+    Integer(Integer),
+    Float(Float),
     Array(Vec<TokenWithPos>),
 }
 pub struct LexParser<'a> {
@@ -174,9 +175,9 @@ impl<'a> LexParser<'a> {
                 }
                 '-' | '0'..='9' => {
                     if let Some((end, word)) = self.word() {
-                        if let Ok(i) = word.parse::<i32>() {
+                        if let Ok(i) = word.parse::<Integer>() {
                             self.push_token(Token::Integer(i), word);
-                        } else if let Ok(f) = word.parse::<f32>() {
+                        } else if let Ok(f) = word.parse::<Float>() {
                             self.push_token(Token::Float(f), word);
                         } else {
                             self.panic(&format!("Cant parse number \"{}\"", word));
@@ -198,13 +199,4 @@ impl<'a> LexParser<'a> {
 pub fn parse_lex(file: &Path) -> Vec<TokenWithPos> {
     let s = fs::read_to_string(file).unwrap();
     LexParser::new(&s, file).parse()
-}
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn parse_lex_works() {
-        let tokens = parse_lex(Path::new("scenes/landscape/view-0.pbrt"));
-        //println!("{:#?}", tokens);
-    }
 }
