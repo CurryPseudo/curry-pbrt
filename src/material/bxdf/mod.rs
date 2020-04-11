@@ -1,19 +1,11 @@
 mod lambertian_reflection;
-use crate::{def::Float, geometry::Vector3f, sampler::SamplerWrapper, spectrum::Spectrum};
+use crate::{geometry::{cosine_sample_hemisphere, Vector3f}, sampler::SamplerWrapper, spectrum::Spectrum, math::WithPdf};
 
-pub trait BxDF {
+pub trait BRDF {
     fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum;
-    fn sample_f(&self, wo: Vector3f, sampler: &mut SamplerWrapper) -> BxDFSampleResult {
-        unimplemented!()       
+    fn sample_f(&self, wo: Vector3f, sampler: &mut SamplerWrapper) -> WithPdf<Spectrum> {
+        let wi = cosine_sample_hemisphere(sampler.get_2d());
+        wi.map(|wi| self.f(wi, wo))
     }
-}
-pub struct BxDFSampleResult {
-    pub r: Spectrum,
-    pub pdf: Float,
 }
 
-impl BxDFSampleResult {
-    pub fn new(r: Spectrum, pdf: Float) -> Self {
-        Self { r, pdf }
-    }
-}

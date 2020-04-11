@@ -2,6 +2,9 @@ use alga::general::{ClosedAdd, ClosedMul, ClosedSub};
 use num_traits::FromPrimitive;
 use crate::def::Float;
 
+mod with_pdf;
+pub use with_pdf::*;
+
 pub fn lerp<T: FromPrimitive + ClosedMul + ClosedAdd + ClosedSub + Copy>(
     t: T,
     min: T,

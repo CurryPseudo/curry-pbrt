@@ -1,6 +1,6 @@
 use super::{Transform, Transformable, Vector2f, Vector3f};
 use crate::def::Float;
-use crate::{def::Integer, math::PI};
+use crate::{def::Integer, math::{INV_PI, PI, WithPdf}};
 pub type Point<T, N> = nalgebra::Point<T, N>;
 pub type Point2f = nalgebra::Point2<Float>;
 pub type Point2i = nalgebra::Point2<Integer>;
@@ -28,8 +28,8 @@ pub fn concentric_sample_disk(u: Point2f) -> Point2f {
         polar_point(r, theta)
     }
 }
-pub fn cosine_sample_hemisphere(u: Point2f) -> Vector3f {
+pub fn cosine_sample_hemisphere(u: Point2f) -> WithPdf<Vector3f> {
     let d = concentric_sample_disk(u);
     let z = (1. - d.coords.magnitude_squared()).sqrt();
-    Vector3f::new(d.x, d.y, z)
+    WithPdf::new(Vector3f::new(d.x, d.y, z), z * INV_PI)
 }
