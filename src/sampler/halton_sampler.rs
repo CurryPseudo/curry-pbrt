@@ -1,6 +1,5 @@
 use crate::{geometry::Vector2f, def::Float};
 use std::collections::HashMap;
-use super::Sampler;
 
 fn radical_inverse_index(x: usize, base_index: usize) -> Float {
     static prims: [usize; 1000] = [
@@ -87,21 +86,12 @@ fn radical_inverse(mut x: usize, base: usize) -> Float {
     accumulated as Float / (base as Float).powf(digit_count as Float)
 }
 pub struct HaltonSampler {
-    sample_per_pixel: usize,
 }
 impl HaltonSampler {
-    pub fn new(sample_per_pixel: usize) -> Self {
-        Self {
-            sample_per_pixel,
-        }
+    pub fn new() -> Self {
+        Self{}
     }
-    fn sample(index: usize, dim: usize) -> Float {
+    pub fn get_sample(&mut self, index: usize, dim: usize) -> Float {
         radical_inverse_index(index, dim)
-    }
-}
-impl Sampler for HaltonSampler {
-    fn get_sample(&mut self, pixel_index: usize, sample_index: usize, dim: usize) -> Float {
-        let r = Self::sample(pixel_index * self.sample_per_pixel + sample_index, dim);
-        r
     }
 }

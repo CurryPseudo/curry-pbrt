@@ -19,5 +19,6 @@ pub fn clamp<T: PartialOrd>(t: T, min: T, max: T) -> T {
     }
 }
 
-pub static PI: Float = 3.14159265358979323846;
 pub static INV_PI: Float = 0.31830988618379067154;
+
+pub static PI: Float = 3.14159265358979323846;

@@ -1,8 +1,9 @@
 use curry_pbrt::sampler::{SamplerWrapper, HaltonSampler};
+use std::sync::Mutex;
 
 fn main() {
-    let mut halton_sampler = HaltonSampler::new(128);
-    let mut sampler = SamplerWrapper::new(&mut halton_sampler, 166, 0, 0);
+    let halton_sampler = Mutex::new(HaltonSampler::new());
+    let mut sampler = SamplerWrapper::new(halton_sampler, 128);
     let count = 128;
     for _ in 0..count {
         let point = sampler.get_2d();

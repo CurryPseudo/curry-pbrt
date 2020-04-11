@@ -4,63 +4,52 @@ use std::sync::Mutex;
 mod halton_sampler;
 pub use halton_sampler::*;
 
-pub trait Sampler {
-    fn get_sample(&mut self, pixel_index: usize, sample_index: usize, dim: usize) -> Float;
-}
-
-pub struct SamplerWrapper<'a> {
-    sampler: &'a mut dyn Sampler,
+pub struct SamplerWrapper {
+    sampler: Mutex<HaltonSampler>,
     pixel_index: usize,
     sample_index: usize,
+    sampler_per_pixel: usize,
     dim: usize,
 }
 
-impl<'a, T: Sampler> From<&'a mut T> for SamplerWrapper<'a> {
-    fn from(sampler: &'a mut T) -> Self {
+impl SamplerWrapper {
+    pub fn new(
+        sampler: Mutex<HaltonSampler>,
+        sampler_per_pixel: usize
+    ) -> Self {
         Self {
             sampler,
             pixel_index: 0,
             sample_index: 0,
+            sampler_per_pixel,
             dim: 0,
-        }
-    }
-}
-
-impl<'a> SamplerWrapper<'a> {
-    pub fn new<T: Sampler>(
-        sampler: &'a mut T,
-        pixel_index: usize,
-        sample_index: usize,
-        dim: usize,
-    ) -> Self {
-        Self {
-            sampler,
-            pixel_index,
-            sample_index,
-            dim,
         }
     }
 
     pub fn next_pixel(self) -> Self {
-        Self {
-            sampler: self.sampler,
-            pixel_index: self.pixel_index + 1,
-            sample_index: 0,
-            dim: 0,
-        }
+        let pixel_index = self.pixel_index + 1;
+        self.set_pixel(pixel_index)
+    }
+
+    pub fn set_pixel(mut self, pixel_index: usize) -> Self {
+        self.pixel_index = pixel_index;
+        self.sample_index = 0;
+        self.dim = 0;
+        self
+    }
+    pub fn set_sample(mut self, sample_index: usize) -> Self {
+        self.sample_index = sample_index;
+        self.dim = 0;
+        self
     }
     pub fn next_sample(self) -> Self {
-        Self {
-            sampler: self.sampler,
-            pixel_index: self.pixel_index,
-            sample_index: self.sample_index + 1,
-            dim: 0,
-        }
+        let sample_index = self.sample_index + 1;
+        self.set_sample(sample_index)
     }
     pub fn get_1d(&mut self) -> Float {
         let r = self
-            .sampler
-            .get_sample(self.pixel_index, self.sample_index, self.dim);
+            .sampler.lock().unwrap()
+            .get_sample(self.pixel_index * self.sampler_per_pixel +  self.sample_index, self.dim);
         self.dim += 1;
         if r == 1. {
             0.9999999999999
