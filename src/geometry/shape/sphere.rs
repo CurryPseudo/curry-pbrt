@@ -1,13 +1,19 @@
-use super::{Interaction, Shape};
+use super::{Shape, ShapeIntersect};
 use crate::{
     def::{Double, Float},
-    geometry::{Bounds3f, Point3f, Ray, Vector3f, Normal3f},
+    geometry::{Bounds3f, Normal3f, Point3f, Ray, Vector3f, Point2f},
+    math::{clamp, INV_PI, PI},
 };
 use std::mem::swap;
 
 pub struct Sphere {
     radius: f32,
 }
+
+impl Sphere {
+    pub fn new(radius: f32) -> Self { Self { radius } }
+}
+
 
 impl Shape for Sphere {
     fn bound(&self) -> Bounds3f {
@@ -16,7 +22,7 @@ impl Shape for Sphere {
             Point3f::from(Vector3f::from_element(self.radius)),
         )
     }
-    fn intersect(&self, ray: &Ray) -> Option<Interaction> {
+    fn intersect(&self, ray: &Ray) -> Option<ShapeIntersect> {
         let a = ray.d.magnitude_squared();
         let b = 2. * ray.d.dot(&ray.o.coords);
         let c = ray.o.coords.magnitude_squared() - self.radius * self.radius;
@@ -25,10 +31,12 @@ impl Shape for Sphere {
             None
         } else {
             let t = if t0 < 0. { t1 } else { t0 };
-            let mut p = ray.eval(t);            
+            let mut p = ray.eval(t);
             p *= self.radius / p.coords.magnitude();
             let n = Normal3f(p.coords.normalize());
-            Some(Interaction::new(p, n))
+            let u = (p.y.atan2(p.x) + PI) * 0.5 * INV_PI;
+            let v = clamp(p.z / self.radius, -1., 1.).acos();
+            Some(ShapeIntersect::new(p, n, t, Point2f::new(u, v)))
         }
     }
 }

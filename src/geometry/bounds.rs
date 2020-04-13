@@ -1,4 +1,4 @@
-use super::{Point, Point2i, Ray, Transform, Transformable, Vector, Vector3f};
+use super::{Point, Point2i, Ray, Transform, Transformable, Vector, Vector3f, Point2u};
 use crate::math::lerp;
 use crate::def::Float;
 use crate::def::Integer;
@@ -16,6 +16,7 @@ pub trait BoundsTrait:
 {
 }
 impl BoundsTrait for Integer {}
+impl BoundsTrait for usize {}
 impl BoundsTrait for Float {}
 
 #[derive(Debug, Clone)]
@@ -202,18 +203,20 @@ impl<T: BoundsTrait> Bounds3<T> {
 
 pub type Bounds2i = Bounds<Integer, U2>;
 
-impl Bounds2i {
-    pub fn index_inside(&self) -> Vec<Point2i> {
+pub type Bounds2u = Bounds<usize, U2>;
+
+
+impl Bounds2u {
+    pub fn index_inside(&self) -> Vec<Point2u> {
         let mut r = Vec::new();
         for i in self.min.x..self.max.x {
             for j in self.min.y..self.max.y {
-                r.push(Point2i::new(i, j))
+                r.push(Point2u::new(i, j))
             }
         }
         r
     }
 }
-
 pub type Bounds2f = Bounds<Float, U2>;
 pub type Bounds3i = Bounds<Integer, U3>;
 pub type Bounds3f = Bounds<Float, U3>;

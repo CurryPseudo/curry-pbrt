@@ -1,20 +1,21 @@
 use crate::{def::Float, geometry::Point2f};
 use std::sync::Mutex;
 
-mod halton_sampler;
-pub use halton_sampler::*;
+mod halton;
+pub use halton::*;
 
-pub struct SamplerWrapper {
-    sampler: Mutex<HaltonSampler>,
+#[derive(Clone)]
+pub struct SamplerWrapper<'a> {
+    sampler: &'a Mutex<HaltonSampler>,
     pixel_index: usize,
     sample_index: usize,
     sampler_per_pixel: usize,
     dim: usize,
 }
 
-impl SamplerWrapper {
+impl<'a> SamplerWrapper<'a> {
     pub fn new(
-        sampler: Mutex<HaltonSampler>,
+        sampler: &'a Mutex<HaltonSampler>,
         sampler_per_pixel: usize
     ) -> Self {
         Self {

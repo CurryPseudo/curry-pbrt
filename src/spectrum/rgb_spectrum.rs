@@ -1,31 +1,109 @@
-use super::CoefficientSpectrum;
 use crate::def::Float;
-use derive_more::{Add, Div, Into, Mul, Sub, Index};
+use derive_more::{Index, Into};
+use std::ops::{Add, Mul, Sub, Div, AddAssign, MulAssign, SubAssign, DivAssign};
 
-#[derive(Clone, Index, Into, Add, Mul, Div, Sub)]
-pub struct RGBSpectrum(CoefficientSpectrum);
+#[derive(Clone, Copy, Index, Into)]
+pub struct RGBSpectrum([Float; 3]);
 
 impl RGBSpectrum {
     pub fn new(v: Float) -> Self {
-        Self(CoefficientSpectrum::new(v, 3))
+        Self([v; 3])
     }
-}
-
-impl From<CoefficientSpectrum> for RGBSpectrum {
-    fn from(c: CoefficientSpectrum) -> Self {
-        assert_eq!(c.len(), 3);
-        Self(c)
+    pub fn map_move<F: Fn(Float) -> Float>(self, f: F) -> Self {
+        Self([f(self.0[0]), f(self.0[1]), f(self.0[2])])
+    }
+    pub fn map<F: Fn(&mut Float)>(&mut self, f: F) {
+        f(&mut self.0[0]);
+        f(&mut self.0[1]);
+        f(&mut self.0[2]);
+    }
+    pub fn op_move<F: Fn(Float, Float) -> Float>(self, rhs: Self, f: F) -> Self {
+        Self([
+            f(self.0[0], rhs.0[0]),
+            f(self.0[1], rhs.0[1]),
+            f(self.0[2], rhs.0[2]),
+        ])
+    }
+    pub fn op<F: Fn(&mut Float, Float)>(&mut self, rhs: Self, f: F) {
+        f(&mut self.0[0], rhs.0[0]);
+        f(&mut self.0[1], rhs.0[1]);
+        f(&mut self.0[2], rhs.0[2]);
     }
 }
 
 impl From<[Float; 3]> for RGBSpectrum {
     fn from(rgb: [Float; 3]) -> Self {
-        Self(CoefficientSpectrum::from(rgb.to_vec().into_boxed_slice()))
+        Self(rgb)
     }
 }
-impl Into<[Float; 3]> for RGBSpectrum {
-    fn into(self) -> [Float; 3] {
-        [self.0[0], self.0[1], self.0[2]]
+macro_rules! impl_num_op {
+    ($op_trait:tt, $fn_name:ident, $op:tt) => {
+        impl $op_trait<Self> for RGBSpectrum {
+            type Output = Self;
+            fn $fn_name(self, rhs: Self) -> Self::Output {
+                self.op_move(rhs, |x, y| x $op y)
+            }
+        }
+        impl $op_trait<&Self> for RGBSpectrum {
+            type Output = Self;
+            fn $fn_name(self, rhs: &Self) -> Self::Output {
+                self.op_move(*rhs, |x, y| x $op y)
+            }
+        }
+        impl $op_trait<Float> for RGBSpectrum {
+            type Output = Self;
+            fn $fn_name(self, rhs: Float) -> Self::Output {
+                self.map_move(|x| x $op rhs)
+            }
+        }
+        impl $op_trait<Option<Self>> for RGBSpectrum {
+            type Output = Self;
+            fn $fn_name(self, _rhs: Option<Self>) -> Self::Output {
+                self.map_move(|x| x $op 0.)
+            }
+        }
+        impl $op_trait<&Option<Self>> for RGBSpectrum {
+            type Output = Self;
+            fn $fn_name(self, _rhs: &Option<Self>) -> Self::Output {
+                self.map_move(|x| x $op 0.)
+            }
+        }
     }
 }
-
+macro_rules! impl_num_op_assign {
+    ($op_trait:tt, $fn_name:ident, $op:tt) => {
+        impl $op_trait<Self> for RGBSpectrum {
+            fn $fn_name(&mut self, rhs: Self) {
+                self.op(rhs, |x, y| *x $op y);
+            }
+        }
+        impl $op_trait<&Self> for RGBSpectrum {
+            fn $fn_name(&mut self, rhs: &Self) {
+                self.op(*rhs, |x, y| *x $op y);
+            }
+        }
+        impl $op_trait<Float> for RGBSpectrum {
+            fn $fn_name(&mut self, rhs: Float) {
+                self.map(|x| *x $op rhs)
+            }
+        }
+        impl $op_trait<Option<Self>> for RGBSpectrum {
+            fn $fn_name(&mut self, _rhs: Option<Self>) {
+                self.map(|x| *x $op 0.)
+            }
+        }
+        impl $op_trait<&Option<Self>> for RGBSpectrum {
+            fn $fn_name(&mut self, _rhs: &Option<Self>) {
+                self.map(|x| *x $op 0.)
+            }
+        }
+    }
+}
+impl_num_op!(Add, add, +);
+impl_num_op!(Mul, mul, *);
+impl_num_op!(Div, div, /);
+impl_num_op!(Sub, sub, -);
+impl_num_op_assign!(AddAssign, add_assign, +=);
+impl_num_op_assign!(SubAssign, sub_assign, -=);
+impl_num_op_assign!(MulAssign, mul_assign, *=);
+impl_num_op_assign!(DivAssign, div_assign, /=);

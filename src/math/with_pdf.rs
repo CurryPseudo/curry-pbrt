@@ -2,8 +2,8 @@ use crate::def::Float;
 use std::ops::{Deref, DerefMut};
 
 pub struct WithPdf<T> {
-    t: T,
-    pdf: Float,
+    pub t: T,
+    pub pdf: Float,
 }
 
 impl<T> WithPdf<T> {

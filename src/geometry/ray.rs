@@ -4,7 +4,7 @@ use crate::geometry::point::Point3f;
 use crate::geometry::vector::Vector3f;
 use num_traits::Bounded;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Ray {
     pub o: Point3f,
     pub d: Vector3f,

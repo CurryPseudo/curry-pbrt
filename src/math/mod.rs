@@ -1,6 +1,6 @@
+use crate::def::Float;
 use alga::general::{ClosedAdd, ClosedMul, ClosedSub};
 use num_traits::FromPrimitive;
-use crate::def::Float;
 
 mod with_pdf;
 pub use with_pdf::*;
@@ -20,6 +20,10 @@ pub fn clamp<T: PartialOrd>(t: T, min: T, max: T) -> T {
     } else {
         t
     }
+}
+
+pub fn power_heuristic(f: Float, g: Float) -> Float {
+    (f * f) / (f * f + g * g)
 }
 
 pub static INV_PI: Float = 0.31830988618379067154;

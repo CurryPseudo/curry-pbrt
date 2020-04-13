@@ -4,6 +4,7 @@ use crate::{def::Integer, math::{INV_PI, PI, WithPdf}};
 pub type Point<T, N> = nalgebra::Point<T, N>;
 pub type Point2f = nalgebra::Point2<Float>;
 pub type Point2i = nalgebra::Point2<Integer>;
+pub type Point2u = nalgebra::Point2<usize>;
 pub type Point3f = nalgebra::Point3<Float>;
 pub type Point3i = nalgebra::Point3<Integer>;
 

@@ -1,0 +1,54 @@
+use super::Integrator;
+use crate::{
+    def::Float, geometry::Ray, math::power_heuristic, sampler::SamplerWrapper, scene::Scene,
+    spectrum::Spectrum,
+};
+
+pub struct DirectLightIntegrator {
+}
+
+impl DirectLightIntegrator {
+    pub fn new() -> Self { Self {  } }
+}
+
+
+impl Integrator for DirectLightIntegrator {
+    fn li(&self, ray: &Ray, scene: &Scene, sampler: &mut SamplerWrapper) -> Spectrum {
+        let mut l = Spectrum::new(0.);
+
+        if let Some(intersect) = scene.intersect(ray) {
+            let wo = -ray.d.normalize();
+            let lights = scene.get_lights();
+            let light = &lights[(sampler.get_1d() * lights.len() as Float) as usize];
+            let brdf = intersect.compute_scattering_functions();
+            let point = &intersect.shape_intersect.p;
+            {
+                // sample light
+                let li_pdf = light.sample_li(intersect.shape_intersect.p, sampler);
+                if let (wi, Some(li)) = li_pdf.t {
+                    let f_pdf = brdf.f_pdf(&wo, &wi);
+                    if let Some(f) = f_pdf.t {
+                        l += li * f * power_heuristic(li_pdf.pdf, f_pdf.pdf) / li_pdf.pdf;
+                    }
+                }
+            }
+            {
+                // sample brdf
+                let f_pdf = brdf.sample_f(&wo, sampler);
+
+                if let (wi, Some(f)) = f_pdf.t {
+                    let ray = Ray::new_od(point.clone(), wi.clone());
+                    let li_pdf = light.le_pdf(&ray);
+                    if let Some(li) = li_pdf.t {
+                        l += li * f * power_heuristic(f_pdf.pdf, li_pdf.pdf) / f_pdf.pdf;
+                    }
+                }
+            }
+        } else {
+            for light in scene.get_lights() {
+                l += light.le(ray);
+            }
+        }
+        l
+    }
+}

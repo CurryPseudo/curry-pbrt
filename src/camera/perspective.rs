@@ -1,7 +1,9 @@
 use super::Camera;
 use crate::{
     def::Float,
-    geometry::{Bounds2f, Transform, Transformable, Vector2f, Vector2i, Vector3f, Point2f, Ray, Point3f},
+    geometry::{
+        Bounds2f, Point2f, Point3f, Ray, Transform, Transformable, Vector2f, Vector2i, Vector3f, Vector2u,
+    },
 };
 
 pub struct PerspectiveCamera {
@@ -9,14 +11,19 @@ pub struct PerspectiveCamera {
 }
 
 impl PerspectiveCamera {
-    pub fn new(
-        screen_window: Bounds2f,
-        fov: Float,
-        near: Float,
-        far: Float,
-        resolution: Vector2i,
-    ) -> Self {
+    pub fn new(fov: Float, resolution: Vector2u) -> Self {
+        let near = 1e-2;
+        let far = 1000.;
         let resolution = Vector2f::new(resolution.x as Float, resolution.y as Float);
+        let aspect = resolution.x / resolution.y;
+        let screen_window = if aspect > 1. {
+            Bounds2f::new(Point2f::new(-aspect, -1.), Point2f::new(-aspect, 1.))
+        } else {
+            Bounds2f::new(
+                Point2f::new(-1., -1. / aspect),
+                Point2f::new(1., 1. / aspect),
+            )
+        };
         let screen_window_d = screen_window.diagonal();
         let screen_to_raster = Transform::translate(Vector3f::new(
             -screen_window.min.x,

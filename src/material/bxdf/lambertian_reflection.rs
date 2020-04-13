@@ -5,8 +5,13 @@ pub struct LambertianReflection {
     r: Spectrum,
 }
 
+impl LambertianReflection {
+    pub fn new(r: Spectrum) -> Self { Self { r } }
+}
+
+
 impl BRDF for LambertianReflection {
-    fn f(&self, _: Vector3f, _: Vector3f) -> Spectrum {
-        self.r.clone() / INV_PI
+    fn f(&self, _: &Vector3f, _: &Vector3f) -> Option<Spectrum> {
+        Some(self.r.clone() / INV_PI)
     }
 }
