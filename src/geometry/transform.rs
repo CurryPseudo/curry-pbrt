@@ -1,8 +1,10 @@
 use super::Vector3f;
 use crate::def::Float;
+use crate::scene_file_parser::BlockSegment;
 use nalgebra::{geometry::Translation, Matrix4};
+use std::collections::VecDeque;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Transform {
     pub m: Matrix4<Float>,
     pub m_inv: Matrix4<Float>,
@@ -20,34 +22,37 @@ impl Transform {
     }
     pub fn translate(delta: Vector3f) -> Self {
         Self::new(
-            Matrix4::from([
-                [1., 0., 0., delta.x],
-                [0., 1., 0., delta.y],
-                [0., 0., 1., delta.z],
-                [0., 0., 0., 1.],
-            ]),
-            Matrix4::from([
-                [1., 0., 0., -delta.x],
-                [0., 1., 0., -delta.y],
-                [0., 0., 1., -delta.z],
-                [0., 0., 0., 1.],
-            ]),
+            Matrix4::new(
+                1., 0., 0., delta.x, 0., 1., 0., delta.y, 0., 0., 1., delta.z, 0., 0., 0., 1.,
+            ),
+            Matrix4::new(
+                1., 0., 0., -delta.x, 0., 1., 0., -delta.y, 0., 0., 1., -delta.z, 0., 0., 0., 1.,
+            ),
         )
     }
     pub fn scale(scale: Vector3f) -> Self {
         Self::new(
-            Matrix4::from([
-                [scale.x, 0., 0., 0.],
-                [0., scale.y, 0., 0.],
-                [0., 0., scale.z, 0.],
-                [0., 0., 0., 1.],
-            ]),
-            Matrix4::from([
-                [1. / scale.x, 0., 0., 0.],
-                [0., 1. / scale.y, 0., 0.],
-                [0., 0., 1. / scale.z, 0.],
-                [0., 0., 0., 1.],
-            ]),
+            Matrix4::new(
+                scale.x, 0., 0., 0., 0., scale.y, 0., 0., 0., 0., scale.z, 0., 0., 0., 0., 1.,
+            ),
+            Matrix4::new(
+                1. / scale.x,
+                0.,
+                0.,
+                0.,
+                0.,
+                1. / scale.y,
+                0.,
+                0.,
+                0.,
+                0.,
+                1. / scale.z,
+                0.,
+                0.,
+                0.,
+                0.,
+                1.,
+            ),
         )
     }
     pub fn has_scale(&self) -> bool {
@@ -58,12 +63,24 @@ impl Transform {
     pub fn perspective(fov: Float, near: Float, far: Float) -> Self {
         let inv_tan_half_fov = 1. / (fov.to_radians() / 2.).tan();
         let t = far / (far - near);
-        Self::from(Matrix4::from([
-            [inv_tan_half_fov, 0., 0., 0.],
-            [0., inv_tan_half_fov, 0., 0.],
-            [0., 0., t, -t * near],
-            [0., 0., 1., 0.],
-        ]))
+        Self::from(Matrix4::new(
+            inv_tan_half_fov,
+            0.,
+            0.,
+            0.,
+            0.,
+            inv_tan_half_fov,
+            0.,
+            0.,
+            0.,
+            0.,
+            t,
+            -t * near,
+            0.,
+            0.,
+            1.,
+            0.,
+        ))
     }
 }
 fn is_norm(v: Vector3f) -> bool {
@@ -94,5 +111,17 @@ pub trait Transformable {
 impl Transformable for Transform {
     fn apply(self, transform: &Transform) -> Self {
         Self::new(transform.m * self.m, self.m_inv * transform.m_inv)
+    }
+}
+
+pub fn parse_transform(segment: &BlockSegment) -> Option<Transform> {
+    let (transform_type, property_set) = segment.get_object().unwrap();
+    match transform_type {
+        "Translate" => Some(Transform::translate(Vector3f::new(
+            property_set[0].get_float().unwrap(),
+            property_set[1].get_float().unwrap(),
+            property_set[2].get_float().unwrap(),
+        ))),
+        _ => None
     }
 }

@@ -1,7 +1,7 @@
 use super::{Shape, ShapeIntersect};
 use crate::{
     def::{Double, Float},
-    geometry::{Bounds3f, Normal3f, Point3f, Ray, Vector3f, Point2f},
+    geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Transform, Vector3f},
     math::{clamp, INV_PI, PI},
 };
 use std::mem::swap;
@@ -11,9 +11,10 @@ pub struct Sphere {
 }
 
 impl Sphere {
-    pub fn new(radius: f32) -> Self { Self { radius } }
+    pub fn new(radius: f32) -> Self {
+        Self { radius }
+    }
 }
-
 
 impl Shape for Sphere {
     fn bound(&self) -> Bounds3f {
@@ -35,7 +36,7 @@ impl Shape for Sphere {
             p *= self.radius / p.coords.magnitude();
             let n = Normal3f(p.coords.normalize());
             let u = (p.y.atan2(p.x) + PI) * 0.5 * INV_PI;
-            let v = clamp(p.z / self.radius, -1., 1.).acos();
+            let v = clamp(p.z / self.radius, -1., 1.).acos() * INV_PI;
             Some(ShapeIntersect::new(p, n, t, Point2f::new(u, v)))
         }
     }

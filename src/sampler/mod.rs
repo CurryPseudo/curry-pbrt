@@ -1,23 +1,23 @@
-use crate::{def::Float, geometry::Point2f};
-use std::sync::Mutex;
+use crate::{def::Float, geometry::Point2f, scene_file_parser::BlockSegment};
+use std::{collections::VecDeque, sync::Mutex};
 
 mod halton;
 pub use halton::*;
 
-#[derive(Clone)]
-pub struct SamplerWrapper<'a> {
-    sampler: &'a Mutex<HaltonSampler>,
+pub trait Sampler {
+    fn get_sample(&mut self, index: usize, dim: usize) -> Float;
+}
+
+pub struct SamplerWrapper {
+    sampler: Box<dyn Sampler>,
     pixel_index: usize,
     sample_index: usize,
     sampler_per_pixel: usize,
     dim: usize,
 }
 
-impl<'a> SamplerWrapper<'a> {
-    pub fn new(
-        sampler: &'a Mutex<HaltonSampler>,
-        sampler_per_pixel: usize
-    ) -> Self {
+impl SamplerWrapper {
+    pub fn new(sampler: Box<dyn Sampler>, sampler_per_pixel: usize) -> Self {
         Self {
             sampler,
             pixel_index: 0,
@@ -48,9 +48,10 @@ impl<'a> SamplerWrapper<'a> {
         self.set_sample(sample_index)
     }
     pub fn get_1d(&mut self) -> Float {
-        let r = self
-            .sampler.lock().unwrap()
-            .get_sample(self.pixel_index * self.sampler_per_pixel +  self.sample_index, self.dim);
+        let r = self.sampler.get_sample(
+            self.pixel_index * self.sampler_per_pixel + self.sample_index,
+            self.dim,
+        );
         self.dim += 1;
         if r == 1. {
             0.9999999999999
@@ -66,5 +67,16 @@ impl<'a> SamplerWrapper<'a> {
     }
     pub fn get_2ds(&mut self, count: usize) -> Vec<Point2f> {
         (0..count).into_iter().map(|_| self.get_2d()).collect()
+    }
+}
+pub fn parse_sampler(segment: &BlockSegment) -> Option<SamplerWrapper> {
+    let property_set = segment.get_object_by_type("Sampler").unwrap();
+    if property_set.get_name().unwrap() == "halton" {
+        let pixel_samples = property_set.get_integer("pixelsamples").unwrap();
+        let sampler = SamplerWrapper::new(Box::new(HaltonSampler::new()), pixel_samples as usize);
+        Some(sampler)
+    }
+    else {
+        panic!()
     }
 }

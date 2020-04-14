@@ -1,9 +1,11 @@
 use crate::{
-    geometry::{Ray, Shape},
-    light::Light,
-    material::{Material, MaterialIntersect},
+    geometry::{parse_shape, parse_transform, Ray, TransformShape, Transformable, shape_apply},
+    light::{parse_light, Light},
+    material::{parse_material, MaterialIntersect},
     primitive::Primitive,
+    scene_file_parser::BlockSegment,
 };
+use std::collections::VecDeque;
 
 #[derive(Default)]
 pub struct Scene {
@@ -42,7 +44,43 @@ impl Scene {
     pub fn add_light(&mut self, light: Box<dyn Light>) {
         self.lights.push(light);
     }
-    pub fn add_primitive(&mut self, primitive: Primitive)  {
+    pub fn add_primitive(&mut self, primitive: Primitive) {
         self.primitives.push(primitive);
     }
+}
+
+pub fn parse_scene(segment: &BlockSegment) -> Scene {
+    let (_, block_segments) = segment.get_block("World").unwrap();
+    let mut material = None;
+    let mut transform = None;
+    let mut scene = Scene::default();
+    for segment in block_segments {
+        let (object_type, property_set) = segment.get_object().unwrap();
+        match object_type {
+            "Material" => {
+                material = Some(parse_material(property_set));
+            }
+            "Shape" => {
+                let mut shape = parse_shape(property_set);
+                if let Some(transform) = &transform {
+                    shape = shape_apply(shape, transform);
+                }
+                scene.add_primitive(Primitive::new(
+                    shape,
+                    material.as_ref().unwrap().box_clone(),
+                ))
+            }
+            "LightSource" => {
+                let mut light = parse_light(property_set);
+                if let Some(transform) = &transform {
+                    light = light.box_apply(transform);
+                }
+                scene.add_light(light);
+            }
+            _ => {
+                transform = Some(parse_transform(segment).unwrap());
+            }
+        }
+    }
+    scene
 }

@@ -7,6 +7,7 @@ use crate::{
     spectrum::Spectrum,
 };
 
+#[derive(Clone)]
 pub struct PointLight {
     point: Point3f,
     i: Spectrum,
@@ -23,7 +24,10 @@ impl PointLight {
 
 impl Transformable for PointLight {
     fn apply(self, transform: &Transform) -> Self {
-        Self{point: self.point.apply(transform), i: self.i}
+        Self {
+            point: self.point.apply(transform),
+            i: self.i,
+        }
     }
 }
 
@@ -43,5 +47,8 @@ impl Light for PointLight {
     }
     fn pdf(&self, _: &Ray) -> Float {
         0.
+    }
+    fn box_apply(&mut self, transform: &Transform) -> Box<dyn Light> {
+        Box::new(self.clone().apply(transform))
     }
 }

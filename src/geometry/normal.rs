@@ -1,5 +1,7 @@
 use super::{Transform, Transformable, Vector3f};
+use nalgebra::{Matrix3x4, Matrix4x3};
 
+#[derive(Debug)]
 pub struct Normal3f(pub Vector3f);
 
 impl From<Vector3f> for Normal3f {
@@ -10,9 +12,7 @@ impl From<Vector3f> for Normal3f {
 
 impl Transformable for Normal3f {
     fn apply(self, transform: &Transform) -> Self {
-        Self(
-            Vector3f::from_homogeneous(transform.m_inv.transpose() * self.0.to_homogeneous())
-                .unwrap(),
-        )
+        let m3 = Matrix3x4::identity() * (transform.m_inv.transpose() * Matrix4x3::identity());
+        Self(m3 * self.0)
     }
 }

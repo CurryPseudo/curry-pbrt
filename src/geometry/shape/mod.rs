@@ -1,11 +1,12 @@
-use super::{Bounds3f, Normal3f, Ray, RayIntersectCache, Point3f, Point2f};
-use crate::def::Float;
+use super::{Bounds3f, Normal3f, Point2f, Point3f, Ray, RayIntersectCache, Transformable, Transform};
+use crate::{def::Float, scene_file_parser::PropertySet};
 mod sphere;
 mod transform;
 pub use sphere::*;
 pub use transform::*;
+use downcast_rs::Downcast;
 
-pub trait Shape {
+pub trait Shape: Downcast {
     fn bound(&self) -> Bounds3f;
     fn intersect(&self, ray: &Ray) -> Option<ShapeIntersect>;
     fn intersect_predicate(&self, ray: &Ray) -> bool {
@@ -20,6 +21,16 @@ pub trait Shape {
     }
 }
 
+impl_downcast!(Shape);
+
+pub fn shape_apply(shape: Box<dyn Shape>, transform: &Transform) -> Box<dyn Shape> {
+    match shape.downcast::<TransformShape>() {
+        Ok(transfrom_shape) => Box::new(transfrom_shape.apply(transform)),
+        Err(shape) => Box::new(TransformShape::from(shape).apply(transform))
+    }
+}
+
+#[derive(Debug)]
 pub struct ShapeIntersect {
     pub p: Point3f,
     pub n: Normal3f,
@@ -28,7 +39,29 @@ pub struct ShapeIntersect {
 }
 
 impl ShapeIntersect {
-    pub fn new(p: Point3f, n: Normal3f, t: Float, uv: Point2f) -> Self { Self { p, n, t, uv } }
+    pub fn new(p: Point3f, n: Normal3f, t: Float, uv: Point2f) -> Self {
+        Self { p, n, t, uv }
+    }
 }
 
-
+impl Transformable for ShapeIntersect {
+    fn apply(self, transform: &super::Transform) -> Self {
+        let p = self.p.apply(transform);
+        let n = self.n.apply(transform);
+        Self {
+            p,
+            n,
+            t: self.t,
+            uv: self.uv,
+        }
+    }
+}
+pub fn parse_shape(property_set: &PropertySet) -> Box<dyn Shape> {
+    if property_set.get_name().unwrap() == "sphere" {
+        let radius = property_set
+            .get_typed_value("radius")
+            .map_or(1., |(_, basic_types)| basic_types.get_float().unwrap());
+        return Box::new(Sphere::new(radius));
+    }
+    panic!()
+}

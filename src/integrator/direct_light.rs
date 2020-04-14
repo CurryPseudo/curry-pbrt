@@ -15,8 +15,10 @@ impl DirectLightIntegrator {
 impl Integrator for DirectLightIntegrator {
     fn li(&self, ray: &Ray, scene: &Scene, sampler: &mut SamplerWrapper) -> Spectrum {
         let mut l = Spectrum::new(0.);
-
         if let Some(intersect) = scene.intersect(ray) {
+            if ray.d.x == 0. && ray.d.y == 0. {
+                trace!("Hit with {:?}", intersect);
+            }
             let wo = -ray.d.normalize();
             let lights = scene.get_lights();
             let light = &lights[(sampler.get_1d() * lights.len() as Float) as usize];

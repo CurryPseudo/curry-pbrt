@@ -1,42 +1,44 @@
-use super::Shape;
-use crate::geometry::{Bounds3f, Ray, RayIntersectCache, Transform, Transformable};
+use super::{Shape, ShapeIntersect};
+use crate::geometry::{Bounds3f, Ray, Transform, Transformable};
 
-pub struct TransformShape<T> {
-    t: T,
+pub struct TransformShape {
+    shape: Box<dyn Shape>,
     transform: Transform,
     inverse_transform: Transform,
 }
 
-impl<T> From<T> for TransformShape<T> {
-    fn from(t: T) -> Self {
+impl From<Box<dyn Shape>> for TransformShape {
+    fn from(shape: Box<dyn Shape>) -> Self {
         Self {
-            t,
+            shape,
             transform: Transform::default(),
             inverse_transform: Transform::default(),
         }
     }
 }
 
-impl<T> Transformable for TransformShape<T> {
+impl Transformable for TransformShape {
     fn apply(self, transform: &Transform) -> Self {
-        let inverse_transform = self.transform.clone().inverse();
+        let transform = self.transform.apply(transform);
+        let inverse_transform = transform.clone().inverse();
         Self {
-            t: self.t,
-            transform: self.transform.apply(transform),
+            shape: self.shape,
+            transform,
             inverse_transform,
         }
     }
 }
 
-impl<T: Shape> Shape for TransformShape<T> {
+impl Shape for TransformShape {
     fn intersect_predicate(&self, ray: &Ray) -> bool {
-        self.t
+        self.shape
             .intersect_predicate(&ray.apply(&self.inverse_transform))
     }
     fn bound(&self) -> Bounds3f {
-        self.t.bound().apply(&self.transform)
+        self.shape.bound().apply(&self.transform)
     }
-    fn intersect(&self, ray: &Ray) -> Option<super::ShapeIntersect> {
-        self.t.intersect(&ray.apply(&self.inverse_transform))
+    fn intersect(&self, ray: &Ray) -> Option<ShapeIntersect> {
+        let intersect = self.shape.intersect(&ray.apply(&self.inverse_transform));
+        Some(intersect?.apply(&self.transform))
     }
 }

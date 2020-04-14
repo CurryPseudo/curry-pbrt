@@ -1,9 +1,9 @@
 pub mod lex;
 
+use crate::def::{Float, Integer};
 use lex::{parse_lex, Token, TokenWithPos};
 use std::collections::VecDeque;
-use std::path::Path;
-use crate::def::{Integer, Float};
+use std::{ops::Index, path::Path};
 
 #[derive(Debug)]
 pub struct FileBlock(Vec<BlockSegment>);
@@ -18,6 +18,12 @@ impl FileBlock {
     }
 }
 
+impl Into<Vec<BlockSegment>> for FileBlock {
+    fn into(self) -> Vec<BlockSegment> {
+        self.0
+    }
+}
+
 #[derive(Debug)]
 pub enum BlockSegment {
     Block {
@@ -27,7 +33,7 @@ pub enum BlockSegment {
     },
     Object {
         object_type: String,
-        object_value: Vec<Properties>,
+        object_value: PropertySet,
     },
 }
 impl BlockSegment {
@@ -42,13 +48,13 @@ impl BlockSegment {
                         Token::BlockBegin(_) => break,
                         Token::BlockEnd(_) => break,
                         _ => {
-                            object_value.push(Properties::from_lex(tokens));
+                            object_value.push(Property::from_lex(tokens));
                         }
                     }
                 }
                 Self::Object {
                     object_type,
-                    object_value,
+                    object_value: PropertySet::from(object_value),
                 }
             }
             Token::BlockBegin(block_type) => {
@@ -91,9 +97,99 @@ impl BlockSegment {
             }
         }
     }
+    pub fn get_object(&self) -> Option<(&str, &PropertySet)> {
+        match self {
+            BlockSegment::Object {
+                object_type,
+                object_value,
+            } => Some((object_type, object_value)),
+            _ => None,
+        }
+    }
+    pub fn get_object_by_type(&self, object_type: &str) -> Option<&PropertySet> {
+        match self {
+            BlockSegment::Object {
+                object_type,
+                object_value,
+            } => {
+                if object_type == object_type {
+                    Some(object_value)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+    pub fn get_block(&self, block_type: &str) -> Option<(&Option<String>, &Vec<BlockSegment>)> {
+        let block_type_ = block_type;
+        if let BlockSegment::Block {
+            block_type,
+            name,
+            block_segments,
+        } = self
+        {
+            if block_type == block_type_ {
+                return Some((name, block_segments));
+            }
+        }
+        None
+    }
 }
 #[derive(Debug)]
-pub enum Properties {
+pub struct PropertySet(Vec<Property>);
+impl From<Vec<Property>> for PropertySet {
+    fn from(xs: Vec<Property>) -> Self {
+        Self(xs)
+    }
+}
+
+impl PropertySet {
+    pub fn get_name(&self) -> Option<&str> {
+        self[0].get_string()
+    }
+    pub fn get_string(&self, name: &str) -> Option<&str> {
+        self.get_typed_value(name)?.1.get_string()
+    }
+    pub fn get_float(&self, name: &str) -> Option<Float> {
+        self.get_typed_value(name)?.1.get_float()
+    }
+    pub fn get_integer(&self, name: &str) -> Option<Integer> {
+        self.get_typed_value(name)?.1.get_integer()
+    }
+    pub fn get_typed_value(&self, name: &str) -> Option<(&String, &BasicTypes)> {
+        let name_ = name;
+        for p in &self.0 {
+            if let Property::TypedValue {
+                type_name,
+                name,
+                values,
+            } = p
+            {
+                if name == name_ {
+                    return Some((type_name, values));
+                }
+            }
+        }
+        None
+    }
+}
+impl Index<usize> for PropertySet {
+    type Output = BasicTypes;
+    fn index(&self, index: usize) -> &Self::Output {
+        match &self.0[index] {
+            Property::Value(r) => r,
+            Property::TypedValue {
+                type_name,
+                name,
+                values,
+            } => values,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum Property {
     Value(BasicTypes),
     TypedValue {
         type_name: String,
@@ -101,7 +197,7 @@ pub enum Properties {
         values: BasicTypes,
     },
 }
-impl Properties {
+impl Property {
     fn from_lex(tokens: &mut VecDeque<TokenWithPos>) -> Self {
         let token = tokens.front().unwrap();
         match &token.token {
@@ -136,8 +232,8 @@ impl Properties {
         }
     }
 }
-#[derive(Debug)]
-pub struct BasicTypes (Vec<BasicType>);
+#[derive(Debug, Clone)]
+pub struct BasicTypes(Vec<BasicType>);
 impl BasicTypes {
     fn from_lex(tokens: &mut VecDeque<TokenWithPos>) -> Self {
         let token = tokens.pop_front().unwrap();
@@ -155,8 +251,43 @@ impl BasicTypes {
             }
         }
     }
+    pub fn get_string(&self) -> Option<&str> {
+        if let BasicType::BasicString(s) = self.0.first()? {
+            Some(s)
+        } else {
+            None
+        }
+    }
+    pub fn get_floats(&self) -> Option<Vec<Float>> {
+        let mut r = Vec::new();
+        for basic_type in &self.0 {
+            if let BasicType::BasicFloat(f) = basic_type {
+                r.push(*f)
+            } else {
+                return None;
+            }
+        }
+        Some(r)
+    }
+    pub fn get_float(&self) -> Option<Float> {
+        if let BasicType::BasicFloat(f) = self.0.first()? {
+            Some(*f)
+        } else {
+            Some(self.get_integer()? as Float)
+        }
+    }
+    pub fn get_integer(&self) -> Option<Integer> {
+        if let BasicType::BasicInteger(i) = self.0.first()? {
+            Some(*i)
+        } else {
+            None
+        }
+    }
 }
-#[derive(Debug)]
+pub trait ParseFromBasicType {
+    fn parse_from_basic_type(basic_type: &BasicTypes) -> Self;
+}
+#[derive(Debug, Clone)]
 pub enum BasicType {
     BasicString(String),
     BasicFloat(Float),
@@ -176,7 +307,7 @@ impl BasicType {
     }
 }
 
-pub fn read_scene(file: &Path) -> FileBlock {
+pub fn read_scene(file: &Path) -> Vec<BlockSegment> {
     let tokens = parse_lex(file);
-    FileBlock::from_lex(tokens)
+    FileBlock::from_lex(tokens).0
 }
