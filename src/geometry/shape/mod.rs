@@ -1,10 +1,12 @@
-use super::{Bounds3f, Normal3f, Point2f, Point3f, Ray, RayIntersectCache, Transformable, Transform};
+use super::{
+    Bounds3f, Normal3f, Point2f, Point3f, Ray, RayIntersectCache, Transform, Transformable,
+};
 use crate::{def::Float, scene_file_parser::PropertySet};
 mod sphere;
 mod transform;
+use downcast_rs::Downcast;
 pub use sphere::*;
 pub use transform::*;
-use downcast_rs::Downcast;
 
 pub trait Shape: Downcast {
     fn bound(&self) -> Bounds3f;
@@ -26,7 +28,7 @@ impl_downcast!(Shape);
 pub fn shape_apply(shape: Box<dyn Shape>, transform: &Transform) -> Box<dyn Shape> {
     match shape.downcast::<TransformShape>() {
         Ok(transfrom_shape) => Box::new(transfrom_shape.apply(transform)),
-        Err(shape) => Box::new(TransformShape::from(shape).apply(transform))
+        Err(shape) => Box::new(TransformShape::from(shape).apply(transform)),
     }
 }
 
@@ -58,9 +60,7 @@ impl Transformable for ShapeIntersect {
 }
 pub fn parse_shape(property_set: &PropertySet) -> Box<dyn Shape> {
     if property_set.get_name().unwrap() == "sphere" {
-        let radius = property_set
-            .get_typed_value("radius")
-            .map_or(1., |(_, basic_types)| basic_types.get_float().unwrap());
+        let radius = property_set.get_value("radius").unwrap_or(1.);
         return Box::new(Sphere::new(radius));
     }
     panic!()

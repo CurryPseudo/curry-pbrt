@@ -1,8 +1,6 @@
 use crate::{
     geometry::ShapeIntersect,
-    scene_file_parser::{BlockSegment, PropertySet},
-    spectrum::Spectrum,
-    texture::{parse_spectrum_texture, Texture, parse_spectrum_texture_default},
+    scene_file_parser::PropertySet
 };
 use bxdf::BRDF;
 
@@ -39,7 +37,7 @@ pub trait Material: Debug {
 pub fn parse_material(property_set: &PropertySet) -> Box<dyn Material> {
     match property_set.get_name().unwrap() {
         "matte" => {
-            let kd = parse_spectrum_texture_default(property_set, "Kd");
+            let kd = property_set.get_default("Kd");
             Box::new(MatteMaterial::new(kd))
         }
         _ => {

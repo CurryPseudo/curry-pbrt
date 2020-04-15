@@ -1,6 +1,6 @@
 use super::{Transform, Transformable, Vector2f, Vector3f};
 use crate::def::Float;
-use crate::{def::Integer, math::{INV_PI, PI, WithPdf}};
+use crate::{def::Integer, math::{INV_PI, PI, WithPdf}, scene_file_parser::{BasicTypes, ParseFromProperty}};
 pub type Point<T, N> = nalgebra::Point<T, N>;
 pub type Point2f = nalgebra::Point2<Float>;
 pub type Point2i = nalgebra::Point2<Integer>;
@@ -33,4 +33,14 @@ pub fn cosine_sample_hemisphere(u: Point2f) -> WithPdf<Vector3f> {
     let d = concentric_sample_disk(u);
     let z = (1. - d.coords.magnitude_squared()).sqrt();
     WithPdf::new(Vector3f::new(d.x, d.y, z), z * INV_PI)
+}
+impl ParseFromProperty for Point3f {
+    fn parse_from_property(_: &str, basic_type: &BasicTypes) -> Self {
+        let floats = basic_type.get_floats().unwrap();
+        trace!("Parse point {}", Point3f::new(floats[0], floats[1], floats[2]));
+        Point3f::new(floats[0], floats[1], floats[2])
+    }
+    fn parse_default() -> Self {
+        Point3f::new(0.,0.,0.)
+    }
 }

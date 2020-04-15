@@ -148,16 +148,10 @@ impl PropertySet {
     pub fn get_name(&self) -> Option<&str> {
         self[0].get_string()
     }
-    pub fn get_string(&self, name: &str) -> Option<&str> {
-        self.get_typed_value(name)?.1.get_string()
+    pub fn get_string(&self, name: &str) -> Option<String> {
+        self.get_value::<String>(name)
     }
-    pub fn get_float(&self, name: &str) -> Option<Float> {
-        self.get_typed_value(name)?.1.get_float()
-    }
-    pub fn get_integer(&self, name: &str) -> Option<Integer> {
-        self.get_typed_value(name)?.1.get_integer()
-    }
-    pub fn get_typed_value(&self, name: &str) -> Option<(&String, &BasicTypes)> {
+    pub fn get_value<T: ParseFromProperty>(&self, name: &str) -> Option<T> {
         let name_ = name;
         for p in &self.0 {
             if let Property::TypedValue {
@@ -167,11 +161,14 @@ impl PropertySet {
             } = p
             {
                 if name == name_ {
-                    return Some((type_name, values));
+                    return Some(T::parse_from_property(type_name, values));
                 }
             }
         }
         None
+    }
+    pub fn get_default<T: ParseFromProperty>(&self, name: &str) -> T {
+        self.get_value(name).unwrap_or(T::parse_default())
     }
 }
 impl Index<usize> for PropertySet {
@@ -261,10 +258,14 @@ impl BasicTypes {
     pub fn get_floats(&self) -> Option<Vec<Float>> {
         let mut r = Vec::new();
         for basic_type in &self.0 {
-            if let BasicType::BasicFloat(f) = basic_type {
-                r.push(*f)
-            } else {
-                return None;
+            match basic_type {
+                BasicType::BasicFloat(f) => {
+                    r.push(*f)
+                }
+                BasicType::BasicInteger(i) => {
+                    r.push(*i as Float)
+                }
+                _ => panic!()
             }
         }
         Some(r)
@@ -284,8 +285,42 @@ impl BasicTypes {
         }
     }
 }
-pub trait ParseFromBasicType {
-    fn parse_from_basic_type(basic_type: &BasicTypes) -> Self;
+pub trait ParseFromProperty {
+    fn parse_from_property(property_type: &str, basic_type: &BasicTypes) -> Self;
+    fn parse_default() -> Self;
+}
+
+impl ParseFromProperty for String {
+    fn parse_from_property(_: & str, basic_type: & BasicTypes) -> Self {
+        String::from(basic_type.get_string().unwrap())
+    }
+    fn parse_default() -> Self {
+        String::new()
+    }
+}
+impl ParseFromProperty for Float {
+    fn parse_from_property(_: & str, basic_type: & BasicTypes) -> Self {
+        basic_type.get_float().unwrap()
+    }
+    fn parse_default() -> Self {
+        0.
+    }
+}
+impl ParseFromProperty for Integer {
+    fn parse_from_property(_: & str, basic_type: & BasicTypes) -> Self {
+        basic_type.get_integer().unwrap()
+    }
+    fn parse_default() -> Self {
+        0
+    }
+}
+impl ParseFromProperty for usize {
+    fn parse_from_property(_: & str, basic_type: & BasicTypes) -> Self {
+        basic_type.get_integer().unwrap() as usize
+    }
+    fn parse_default() -> Self {
+        0
+    }
 }
 #[derive(Debug, Clone)]
 pub enum BasicType {

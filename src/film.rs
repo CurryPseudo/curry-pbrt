@@ -1,13 +1,13 @@
 use crate::math::clamp;
 use crate::{
     def::Float,
-    geometry::{Bounds2u, Point2u, Vector2u},
+    geometry::{Bounds2u, Point2u, Vector2u, Vector2f},
     scene_file_parser::BlockSegment,
     spectrum::Spectrum,
 };
 use png::HasParameters;
 use png::{BitDepth, ColorType, Encoder};
-use std::{collections::VecDeque, fs::File, io::BufWriter, path::Path};
+use std::{fs::File, io::BufWriter, path::Path};
 
 pub struct Film {
     pub(crate) resolution: Vector2u,
@@ -29,6 +29,14 @@ impl Film {
         let index = self.point_to_index(point);
         self.pixels[index] += spectrum;
     }
+    pub fn add_samples(&mut self, point: &Point2u, sampels: &[(Vector2f, Spectrum)]) {
+        let mut sum = Spectrum::new(0.);
+        for sample in sampels {
+            sum += sample.1;
+        }
+        sum /= sampels.len() as Float;
+        self.add_sample(point, sum);
+    }
     pub fn write_image(self, file_path: &Path) {
         let file = File::create(file_path).unwrap();
         let ref mut w = BufWriter::new(file);
@@ -48,22 +56,14 @@ impl Film {
 pub fn parse_film(segment: &BlockSegment) -> Option<(Film, String, Vector2u)> {
     let property_set = segment.get_object_by_type("Film").unwrap();
     if property_set.get_name().unwrap() == "image" {
-        let x_resolution = property_set
-            .get_integer("xresolution")
-            .unwrap_or(640);
-        let y_resolution = property_set
-            .get_integer("yresolution")
-            .unwrap_or(480);
-        let resolution = Vector2u::new(x_resolution as usize, y_resolution as usize);
-        let file_name = String::from(
-            property_set
-                .get_string("filename")
-                .unwrap_or("curry-pbrt.png"),
-        );
+        let x_resolution = property_set.get_value("xresolution").unwrap_or(640);
+        let y_resolution = property_set.get_value("yresolution").unwrap_or(480);
+        let resolution = Vector2u::new(x_resolution, y_resolution);
+        let file_name = property_set
+            .get_string("filename")
+            .unwrap_or(String::from("curry-pbrt.png"));
         Some((Film::new(resolution), file_name, resolution))
-    }
-    else {
+    } else {
         panic!()
     }
-    
 }

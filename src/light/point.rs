@@ -1,4 +1,4 @@
-use super::Light;
+use super::{DeltaLight, Light};
 use crate::{
     def::Float,
     geometry::{Point3f, Ray, Transform, Transformable, Vector3f},
@@ -31,25 +31,11 @@ impl Transformable for PointLight {
     }
 }
 
-impl Light for PointLight {
-    fn le(&self, _: &Ray) -> Option<Spectrum> {
-        None
-    }
-    fn sample_li(
-        &self,
-        point: &Point3f,
-        sampler: &mut SamplerWrapper,
-    ) -> WithPdf<(Vector3f, Option<Spectrum>)> {
-        sampler.get_2d();
+impl DeltaLight for PointLight {
+    fn sample_li(&self, point: &Point3f) -> (Vector3f, Option<Spectrum>) {
         let wi = self.point - point;
         let i = self.i / wi.magnitude_squared();
-        WithPdf::new((wi.normalize(), Some(i)), 1.)
-    }
-    fn pdf(&self, _: &Ray) -> Float {
-        0.
-    }
-    fn box_apply(&mut self, transform: &Transform) -> Box<dyn Light> {
-        Box::new(self.clone().apply(transform))
+        (wi.normalize(), Some(i))
     }
     fn visibility_test_ray(&self, point: &Point3f, wi: &Vector3f) -> Ray {
         let t = (self.point - point).magnitude();

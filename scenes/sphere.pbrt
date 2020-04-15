@@ -10,6 +10,16 @@ Integrator "directlighting"
 
 WorldBegin
 
+Material "matte" "rgb Kd" [ 0.5 0.4 0.3 ]
+
+Translate -1. 1. 5.
+
+LightSource "point" "rgb I" [ 1. 1. 1. ]
+
+Translate 0. 0. 0.
+
+Shape "sphere" "float radius" [ 7 ]
+
 Material "matte" "rgb Kd" [ 0.3 0.4 0.5 ]
 
 Translate 0. 0. 5.
@@ -26,6 +36,9 @@ LightSource "point" "rgb I" [ 1. 1. 1. ]
 
 Translate 0.6 2. 3.
 
-#LightSource "point" "rgb I" [ 1. 1. 1. ]
+LightSource "distant" 
+	"rgb I" [ 0.3 0.3 0.3 ] 
+	"float from" [0 0 0]
+	"float to" [0 0 1]
 
 WorldEnd

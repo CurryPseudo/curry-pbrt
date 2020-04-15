@@ -1,10 +1,15 @@
-use std::collections::VecDeque;
 use crate::scene_file_parser::read_scene;
-use std::path::Path;
 use crate::{
-    camera::{parse_camera, Camera}, def::Float, film::{parse_film, Film}, geometry::Point2f, integrator::{parse_integrator, Integrator},
-    sampler::{SamplerWrapper, HaltonSampler, parse_sampler}, scene::{parse_scene, Scene},
+    camera::{parse_camera, Camera},
+    def::Float,
+    film::{parse_film, Film},
+    geometry::Point2f,
+    integrator::{parse_integrator, Integrator},
+    sampler::{parse_sampler, HaltonSampler, SamplerWrapper},
+    scene::{parse_scene, Scene},
 };
+use std::collections::VecDeque;
+use std::path::Path;
 use std::sync::Mutex;
 
 pub fn render(
@@ -15,10 +20,18 @@ pub fn render(
     camera: Box<dyn Camera>,
 ) {
     for film_point in film.bound().index_inside() {
-        let film_point_f = Point2f::new(film_point.x as Float, film_point.y as Float);
-        let ray = camera.generate_ray(film_point_f);
-        let li = integrator.li(&ray, &scene, &mut sampler);
-        film.add_sample(&film_point, li);
+        let mut film_point_f = Point2f::new(film_point.x as Float, film_point.y as Float);
+        let sample_per_pixel = sampler.get_sample_per_pixel();
+        let mut samples = Vec::new();
+        for _ in 0..sample_per_pixel {
+            let offset = sampler.get_2d() - Point2f::new(0.5, 0.5);
+            film_point_f += offset;
+            let ray = camera.generate_ray(film_point_f);
+            let li = integrator.li(&ray, &scene, &mut sampler);
+            samples.push((offset, li));
+            sampler = sampler.next_sample();
+        }
+        film.add_samples(&film_point, &samples);
         sampler = sampler.next_pixel();
     }
 }

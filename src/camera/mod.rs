@@ -13,7 +13,7 @@ pub fn parse_camera(
 ) -> Option<Box<dyn Fn(Vector2u) -> Box<dyn Camera>>> {
     let object_value = segment.get_object_by_type("Camera")?;
     if object_value.get_name().unwrap() == "perspective" {
-        let fov = object_value.get_float("fov").unwrap_or(90.);
+        let fov = object_value.get_value("fov").unwrap_or(90.);
         Some(Box::new(move |resolution| {
             Box::new(PerspectiveCamera::new(fov, resolution))
         }))

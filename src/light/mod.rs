@@ -1,18 +1,26 @@
+mod distant;
 mod point;
 use crate::{
     def::Float,
-    geometry::{Point3f, Ray, Transform, Vector3f},
+    geometry::{Point3f, Ray, Transform, Transformable, Vector3f},
     math::WithPdf,
     sampler::SamplerWrapper,
+    scene::Scene,
     scene_file_parser::PropertySet,
-    spectrum::{parse_spectrum_default, Spectrum}, scene::Scene,
+    spectrum::Spectrum,
 };
 
+pub use distant::*;
 pub use point::*;
 
 pub trait Light {
     fn visibility_test_ray(&self, point: &Point3f, wi: &Vector3f) -> Ray;
-    fn sample_li_with_visibility_test(&self, point: &Point3f, sampler: &mut SamplerWrapper, scene: &Scene) -> WithPdf<(Vector3f, Option<Spectrum>)> {
+    fn sample_li_with_visibility_test(
+        &self,
+        point: &Point3f,
+        sampler: &mut SamplerWrapper,
+        scene: &Scene,
+    ) -> WithPdf<(Vector3f, Option<Spectrum>)> {
         let li_pdf = self.sample_li(point, sampler);
         let (wi, li) = li_pdf.t;
         if li.is_some() {
@@ -20,12 +28,10 @@ pub trait Light {
             let ray = self.visibility_test_ray(&point, &wi);
             if scene.intersect_predicate(&ray) {
                 WithPdf::new((wi, None), li_pdf.pdf)
-            }
-            else {
+            } else {
                 li_pdf
             }
-        }
-        else {
+        } else {
             li_pdf
         }
     }
@@ -42,13 +48,53 @@ pub trait Light {
     fn box_apply(&mut self, transform: &Transform) -> Box<dyn Light>;
 }
 
-
 pub fn parse_light(property_set: &PropertySet) -> Box<dyn Light> {
     match property_set.get_name().unwrap() {
         "point" => {
-            let i = parse_spectrum_default(property_set, "I");
+            let i = property_set.get_default("I");
             Box::new(PointLight::new(i))
         }
+        "distant" => {
+            let i = property_set.get_default("I");
+            let from = property_set
+                .get_value("from")
+                .unwrap_or(Point3f::new(0., 0., 0.));
+            let w = property_set
+                .get_value::<Point3f>("from")
+                .map_or(Vector3f::new(0., 0., -1.), |from| {
+                    property_set.get_value::<Point3f>("to").unwrap() - from
+                });
+            trace!("Distant w {}", w);
+            Box::new(DistantLight::new(from, w, i))
+        }
         _ => panic!(),
+    }
+}
+
+pub trait DeltaLight: Clone + Transformable {
+    fn sample_li(&self, point: &Point3f) -> (Vector3f, Option<Spectrum>);
+    fn visibility_test_ray(&self, point: &Point3f, wi: &Vector3f) -> Ray;
+}
+impl<T: DeltaLight + 'static> Light for T {
+    fn visibility_test_ray(&self, point: &Point3f, wi: &Vector3f) -> Ray {
+        self.visibility_test_ray(point, wi)
+    }
+    fn sample_li(
+        &self,
+        point: &Point3f,
+        sampler: &mut SamplerWrapper,
+    ) -> WithPdf<(Vector3f, Option<Spectrum>)> {
+        sampler.get_2d();
+        let (wi, li) = self.sample_li(point);
+        WithPdf::new((wi, li), 1.)
+    }
+    fn le(&self, _: &Ray) -> Option<Spectrum> {
+        None
+    }
+    fn pdf(&self, _: &Ray) -> Float {
+        0.
+    }
+    fn box_apply(&mut self, transform: &Transform) -> Box<dyn Light> {
+        Box::new(self.clone().apply(&transform))
     }
 }

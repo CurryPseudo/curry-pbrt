@@ -55,9 +55,12 @@ impl<'a> LexParser<'a> {
     fn word(&self) -> Option<(usize, &'a str)> {
         let delta = self.s[self.index + 1..]
             .chars()
-            .position(|c| c == ' ' || c == '\n' || c == '\t')?
+            .position(|c| c == ' ' || c == '\n' || c == '\t' || c == ']')?
             + 1;
         Some((self.index + delta, &self.s[self.index..self.index + delta]))
+    }
+    fn line(&self) -> Option<(usize, &'a str)> {
+        self.next_equal('\n')
     }
     fn push_token(&mut self, token: Token, origin: &str) {
         let token_with_pos = TokenWithPos {
@@ -114,7 +117,7 @@ impl<'a> LexParser<'a> {
                     }
                 }
                 '#' => {
-                    if let Some((end, _)) = self.word() {
+                    if let Some((end, _)) = self.line() {
                         self.column += end - self.index;
                         self.index = end;
                     } else {

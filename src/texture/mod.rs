@@ -1,6 +1,6 @@
 use crate::{
     geometry::Point2f,
-    scene_file_parser::{BasicTypes, ParseFromBasicType, PropertySet},
+    scene_file_parser::{BasicTypes, ParseFromProperty},
     spectrum::Spectrum,
 };
 
@@ -21,18 +21,17 @@ impl<T: Clone> Texture<T> {
     }
 }
 
-pub fn parse_spectrum_texture(
-    (texture_type, texture_value): (&String, &BasicTypes),
-) -> Texture<Spectrum> {
-    if texture_type == "rgb" {
-        let s = Spectrum::parse_from_basic_type(texture_value);
-        return Texture::from(s);
+impl ParseFromProperty for Texture<Spectrum> {
+    fn parse_from_property(property_type: &str, basic_type: &BasicTypes) -> Self {
+        match property_type {
+            "rgb" => {
+                Texture::from(Spectrum::parse_from_property(property_type, basic_type))
+            }
+            _ => panic!()
+        }
     }
-    panic!()
+    fn parse_default() -> Self {
+        Texture::from(Spectrum::parse_default())
+    }
 }
-pub fn parse_spectrum_texture_default(property_set: &PropertySet, name: &str) -> Texture<Spectrum> {
-    property_set.get_typed_value(name).map_or(
-        Texture::from(Spectrum::from([1., 1., 1.])),
-        |type_and_value| parse_spectrum_texture(type_and_value),
-    )
-}
+

@@ -3,6 +3,7 @@ use crate::def::Float;
 use crate::geometry::point::Point3f;
 use crate::geometry::vector::Vector3f;
 use num_traits::Bounded;
+use std::fmt::Display;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Ray {
@@ -11,9 +12,19 @@ pub struct Ray {
     pub t_max: Float,
 }
 
+impl Display for Ray {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "o: {} d: {} t_max: {}", self.o, self.d, self.t_max)
+    }
+}
+
 impl Ray {
     pub fn new_od(o: Point3f, d: Vector3f) -> Self {
-        Self { o, d, t_max: Float::max_value() }
+        Self {
+            o,
+            d,
+            t_max: Float::max_value(),
+        }
     }
     pub fn new(o: Point3f, d: Vector3f, t_max: Float) -> Self {
         Self { o, d, t_max }

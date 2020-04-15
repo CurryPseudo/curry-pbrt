@@ -1,6 +1,6 @@
 use crate::{
     def::Float,
-    scene_file_parser::{BasicTypes, ParseFromBasicType},
+    scene_file_parser::{BasicTypes, ParseFromProperty},
 };
 use derive_more::{Index, Into};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
@@ -111,12 +111,15 @@ impl_num_op_assign!(SubAssign, sub_assign, -=);
 impl_num_op_assign!(MulAssign, mul_assign, *=);
 impl_num_op_assign!(DivAssign, div_assign, /=);
 
-impl ParseFromBasicType for RGBSpectrum {
-    fn parse_from_basic_type(basic_type: &BasicTypes) -> Self {
+impl ParseFromProperty for RGBSpectrum {
+    fn parse_from_property(_: &str, basic_type: &BasicTypes) -> Self {
         let floats = basic_type.get_floats().unwrap();
         if floats.len() != 3 {
             panic!()
         }
         RGBSpectrum::from([floats[0], floats[1], floats[2]])
+    }
+    fn parse_default() -> Self {
+        RGBSpectrum::new(1.)
     }
 }

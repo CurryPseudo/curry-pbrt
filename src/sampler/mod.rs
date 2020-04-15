@@ -12,21 +12,23 @@ pub struct SamplerWrapper {
     sampler: Box<dyn Sampler>,
     pixel_index: usize,
     sample_index: usize,
-    sampler_per_pixel: usize,
+    sample_per_pixel: usize,
     dim: usize,
 }
 
 impl SamplerWrapper {
-    pub fn new(sampler: Box<dyn Sampler>, sampler_per_pixel: usize) -> Self {
+    pub fn new(sampler: Box<dyn Sampler>, sample_per_pixel: usize) -> Self {
         Self {
             sampler,
             pixel_index: 0,
             sample_index: 0,
-            sampler_per_pixel,
+            sample_per_pixel,
             dim: 0,
         }
     }
-
+    pub fn get_sample_per_pixel(&self) -> usize {
+        self.sample_per_pixel
+    }
     pub fn next_pixel(self) -> Self {
         let pixel_index = self.pixel_index + 1;
         self.set_pixel(pixel_index)
@@ -49,7 +51,7 @@ impl SamplerWrapper {
     }
     pub fn get_1d(&mut self) -> Float {
         let r = self.sampler.get_sample(
-            self.pixel_index * self.sampler_per_pixel + self.sample_index,
+            self.pixel_index * self.sample_per_pixel + self.sample_index,
             self.dim,
         );
         self.dim += 1;
@@ -72,8 +74,8 @@ impl SamplerWrapper {
 pub fn parse_sampler(segment: &BlockSegment) -> Option<SamplerWrapper> {
     let property_set = segment.get_object_by_type("Sampler").unwrap();
     if property_set.get_name().unwrap() == "halton" {
-        let pixel_samples = property_set.get_integer("pixelsamples").unwrap();
-        let sampler = SamplerWrapper::new(Box::new(HaltonSampler::new()), pixel_samples as usize);
+        let pixel_samples = property_set.get_value("pixelsamples").unwrap();
+        let sampler = SamplerWrapper::new(Box::new(HaltonSampler::new()), pixel_samples);
         Some(sampler)
     }
     else {

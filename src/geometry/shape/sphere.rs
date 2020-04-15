@@ -27,14 +27,24 @@ impl Shape for Sphere {
         let a = ray.d.magnitude_squared();
         let b = 2. * ray.d.dot(&ray.o.coords);
         let c = ray.o.coords.magnitude_squared() - self.radius * self.radius;
+        let inside = c < 0.;
         let (t0, t1) = solve_quadratic(a, b, c)?;
         if t0 > ray.t_max || t1 < 0. {
             None
         } else {
             let t = if t0 < 0. { t1 } else { t0 };
+            if t > ray.t_max {
+                return None;
+            }
             let mut p = ray.eval(t);
             p *= self.radius / p.coords.magnitude();
-            let n = Normal3f(p.coords.normalize());
+            let n = p.coords.normalize();
+            let n = if inside {
+                Normal3f(-n)
+            }
+            else {
+                Normal3f(n)
+            };
             let u = (p.y.atan2(p.x) + PI) * 0.5 * INV_PI;
             let v = clamp(p.z / self.radius, -1., 1.).acos() * INV_PI;
             Some(ShapeIntersect::new(p, n, t, Point2f::new(u, v)))
