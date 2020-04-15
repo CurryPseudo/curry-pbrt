@@ -10,17 +10,21 @@ use crate::{
 };
 use rayon::prelude::*;
 use std::collections::VecDeque;
-use std::path::Path;
+use std::{sync::Mutex, path::Path};
+use indicatif::{ProgressStyle, ProgressBar};
 
 pub fn render(
     scene: Scene,
     sampler: SamplerWrapper,
     integrator: Box<dyn Integrator>,
-    film: &mut Film,
+    film: Film,
     camera: Box<dyn Camera>,
-) {
-    let mut film_tiles = film.gen_tiles();
-    film_tiles.par_iter_mut().for_each(|tile| {
+) -> Film {
+    let film_tiles = film.gen_tiles();
+    let progress_bar = ProgressBar::new(film.bound().area() as u64);
+    progress_bar.set_style(ProgressStyle::default_bar().template("{bar} ({eta})"));
+    let film = Mutex::new(film);
+    film_tiles.into_par_iter().for_each(|mut tile| {
         let mut sampler = sampler.clone().set_pixel(tile.get_pixel_begin_index());
         for film_point in tile.bound().index_inside() {
             let mut film_point_f = Point2f::new(film_point.x as Float, film_point.y as Float);
@@ -36,21 +40,22 @@ pub fn render(
             }
             tile.add_samples(&film_point, &samples);
             sampler = sampler.next_pixel();
+            progress_bar.inc(1);
         }
+        film.lock().unwrap().merge_tile(tile);
     });
-    for tile in film_tiles {
-        film.merge_tile(tile);
-    }
+    progress_bar.finish_and_clear();
+    film.into_inner().unwrap()
 }
 
 pub fn render_from_file(path: &Path) {
     let mut segments = read_scene(path).into_iter().collect::<VecDeque<_>>();
     let camera_factory = parse_camera(&segments.pop_front().unwrap()).unwrap();
     let sampler = parse_sampler(&segments.pop_front().unwrap()).unwrap();
-    let (mut film, file_name, resolution) = parse_film(&segments.pop_front().unwrap()).unwrap();
+    let (film, file_name, resolution) = parse_film(&segments.pop_front().unwrap()).unwrap();
     let camera = camera_factory(resolution);
     let integrator = parse_integrator(&segments.pop_front().unwrap()).unwrap();
     let scene = parse_scene(&segments.pop_front().unwrap());
-    render(scene, sampler, integrator, &mut film, camera);
+    let film = render(scene, sampler, integrator, film, camera);
     film.write_image(&Path::new(file_name.as_str()))
 }

@@ -55,7 +55,7 @@ pub fn parse_light(property_set: &PropertySet) -> Box<dyn Light> {
             Box::new(PointLight::new(i))
         }
         "distant" => {
-            let i = property_set.get_default("I");
+            let i = property_set.get_default("L");
             let from = property_set
                 .get_value("from")
                 .unwrap_or(Point3f::new(0., 0., 0.));

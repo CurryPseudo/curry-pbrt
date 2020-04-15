@@ -1,4 +1,4 @@
-use crate::math::clamp;
+use crate::math::{clamp, gamma_correct, max, min, rlerp};
 use crate::{
     def::Float,
     geometry::{Bounds2u, Point2u, Vector2f, Vector2u},
@@ -7,7 +7,7 @@ use crate::{
 };
 use png::HasParameters;
 use png::{BitDepth, ColorType, Encoder};
-use std::{fs::File, io::BufWriter, path::Path};
+use std::{fmt::{Debug, Display}, fs::File, io::BufWriter, path::Path};
 
 pub trait Renderable {
     fn bound(&self) -> &Bounds2u;
@@ -54,9 +54,9 @@ impl Film {
         let mut data = Vec::new();
         for pixel in self.pixels {
             let [r, g, b]: [Float; 3] = pixel.into();
-            data.push(clamp(r * 255., 0., 255.) as u8);
-            data.push(clamp(g * 255., 0., 255.) as u8);
-            data.push(clamp(b * 255., 0., 255.) as u8);
+            data.push(clamp(gamma_correct(r) * 255. + 0.5, 0., 255.) as u8);
+            data.push(clamp(gamma_correct(g) * 255. + 0.5, 0., 255.) as u8);
+            data.push(clamp(gamma_correct(b) * 255. + 0.5, 0., 255.) as u8);
         }
         writer.write_image_data(&data).unwrap()
     }
@@ -65,8 +65,8 @@ impl Film {
         let tile_indices = Bounds2u::new(
             Point2u::new(0, 0),
             Point2u::new(
-                self.resolution.x / tile_size + 1,
-                self.resolution.y / tile_size + 1,
+                (self.resolution.x - 1) / tile_size + 1,
+                (self.resolution.y - 1) / tile_size + 1,
             ),
         );
         let self_bound = self.bound();
@@ -76,7 +76,7 @@ impl Film {
             let bound = Bounds2u::new(tile_index * tile_size, next * tile_size) & &self_bound;
             r.push(FilmTile::new(
                 bound,
-                tile_indices.point_to_offset(&tile_index) * tile_size,
+                tile_indices.point_to_offset(&tile_index) * tile_size * tile_size,
             ));
         }
         r
@@ -135,11 +135,14 @@ impl FilmTile {
         let mut index = 0;
         let d = self.bound.diagonal();
         let min = self.bound.min;
-        self.pixels.into_iter().map(|s|{
-            let r = (Point2u::new(index % d.x, index / d.x) + min.coords, s);
-            index += 1;
-            r
-        }).collect()
+        self.pixels
+            .into_iter()
+            .map(|s| {
+                let r = (Point2u::new(index % d.x, index / d.x) + min.coords, s);
+                index += 1;
+                r
+            })
+            .collect()
     }
 }
 impl Renderable for FilmTile {
@@ -148,5 +151,11 @@ impl Renderable for FilmTile {
     }
     fn get_pixels(&mut self) -> &mut Vec<Spectrum> {
         &mut self.pixels
+    }
+}
+
+impl Debug for FilmTile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.bound)
     }
 }

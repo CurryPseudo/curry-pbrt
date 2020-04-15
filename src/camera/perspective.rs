@@ -28,12 +28,12 @@ impl PerspectiveCamera {
         let screen_window_d = screen_window.diagonal();
         let screen_to_raster = Transform::translate(Vector3f::new(
             -screen_window.min.x,
-            -screen_window.min.y,
+            -screen_window.max.y,
             0.,
         ))
         .apply(&Transform::scale(Vector3f::new(
             1. / screen_window_d.x,
-            1. / screen_window_d.y,
+            -(1. / screen_window_d.y),
             1.,
         )))
         .apply(&Transform::scale(Vector3f::new(

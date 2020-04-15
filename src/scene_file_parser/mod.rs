@@ -202,7 +202,7 @@ impl Property {
                 let words = s.split_whitespace().collect::<Vec<_>>();
                 if words.len() == 2 {
                     match words[0] {
-                        "string" | "float" | "integer" | "rgb" | "texture" => {
+                        "point" | "string" | "float" | "integer" | "rgb" | "texture" => {
                             // TypedValue
                             let words = s.split_whitespace().collect::<Vec<_>>();
                             let type_name = String::from(words[0]);

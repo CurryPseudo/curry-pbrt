@@ -4,13 +4,20 @@ use super::{
 use crate::{def::Float, scene_file_parser::PropertySet};
 mod sphere;
 mod transform;
-use downcast_rs::{DowncastSync, Downcast};
+use downcast_rs::{Downcast, DowncastSync};
 pub use sphere::*;
 pub use transform::*;
 
 pub trait Shape: DowncastSync {
     fn bound(&self) -> Bounds3f;
     fn intersect(&self, ray: &Ray) -> Option<ShapeIntersect>;
+    fn intersect_through_bound(&self, ray: &RayIntersectCache) -> Option<ShapeIntersect> {
+        if self.bound().intersect_predicate_cached(ray) {
+            self.intersect(ray.origin_ray())
+        } else {
+            None
+        }
+    }
     fn intersect_predicate(&self, ray: &Ray) -> bool {
         self.intersect(ray).is_some()
     }

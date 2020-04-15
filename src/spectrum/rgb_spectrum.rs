@@ -2,10 +2,10 @@ use crate::{
     def::Float,
     scene_file_parser::{BasicTypes, ParseFromProperty},
 };
-use derive_more::{Index, Into};
+use derive_more::{Deref, Index, Into};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
-#[derive(Debug, Clone, Copy, Index, Into)]
+#[derive(Debug, Clone, Copy, Index, Into, Deref)]
 pub struct RGBSpectrum([Float; 3]);
 
 impl RGBSpectrum {
@@ -32,6 +32,20 @@ impl RGBSpectrum {
         f(&mut self.0[1], rhs.0[1]);
         f(&mut self.0[2], rhs.0[2]);
     }
+    pub fn to_xyz(self) -> Self {
+        let mut r = [0., 0., 0.];
+        r[0] = 0.412453 * self.0[0] + 0.357580 * self.0[1] + 0.180423 * self.0[2];
+        r[1] = 0.212671 * self.0[0] + 0.715160 * self.0[1] + 0.072169 * self.0[2];
+        r[2] = 0.019334 * self.0[0] + 0.119193 * self.0[1] + 0.950227 * self.0[2];
+        Self(r)
+    }
+    pub fn from_xyz(self) -> Self {
+        let mut r = [0., 0., 0.];
+        r[0] = 3.240479 * self.0[0] - 1.537150 * self.0[1] - 0.498535 * self.0[2];
+        r[1] = -0.969256 * self.0[0] + 1.875991 * self.0[1] + 0.041556 * self.0[2];
+        r[2] = 0.055648 * self.0[0] - 0.204043 * self.0[1] + 1.057311 * self.0[2];
+        Self(r)
+    }
 }
 
 impl From<[Float; 3]> for RGBSpectrum {
@@ -39,6 +53,7 @@ impl From<[Float; 3]> for RGBSpectrum {
         Self(rgb)
     }
 }
+
 macro_rules! impl_num_op {
     ($op_trait:tt, $fn_name:ident, $op:tt) => {
         impl $op_trait<Self> for RGBSpectrum {

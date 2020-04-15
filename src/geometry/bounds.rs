@@ -1,7 +1,8 @@
-use super::{Point, Point2i, Ray, Transform, Transformable, Vector, Vector3f, Point2u};
-use crate::math::lerp;
+use super::{Point, Point2i, Point2u, Ray, Transform, Transformable, Vector, Vector3f};
 use crate::def::Float;
 use crate::def::Integer;
+use crate::math::lerp;
+use crate::math::{max, min};
 use alga::general::{ClosedAdd, ClosedDiv, ClosedMul, ClosedSub};
 use nalgebra::{
     allocator::Allocator,
@@ -9,7 +10,10 @@ use nalgebra::{
     DefaultAllocator, DimName, Scalar, Vector3,
 };
 use num_traits::{Bounded, FromPrimitive};
-use std::ops::{BitAnd, BitOr, Index};
+use std::{
+    fmt::Display,
+    ops::{BitAnd, BitOr, Index},
+};
 
 pub trait BoundsTrait:
     Scalar + Copy + PartialOrd + Bounded + FromPrimitive + ClosedAdd + ClosedSub + ClosedMul + ClosedDiv
@@ -26,6 +30,15 @@ where
 {
     pub min: Point<T, N>,
     pub max: Point<T, N>,
+}
+
+impl<T: BoundsTrait + Display, N: DimName> Display for Bounds<T, N> 
+where
+    DefaultAllocator: Allocator<T, N>,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} => {}", self.min, self.max)
+    }
 }
 
 impl<T: BoundsTrait, N: DimName> Bounds<T, N>
@@ -188,6 +201,12 @@ where
 
 pub type Bounds2<T> = Bounds<T, U2>;
 
+impl<T: BoundsTrait> Bounds2<T> {
+    pub fn area(&self) -> T {
+        let d = self.diagonal();
+        d.x * d.y
+    }
+}
 pub type Bounds3<T> = Bounds<T, U3>;
 
 impl<T: BoundsTrait> Bounds3<T> {
@@ -204,7 +223,6 @@ impl<T: BoundsTrait> Bounds3<T> {
 pub type Bounds2i = Bounds<Integer, U2>;
 
 pub type Bounds2u = Bounds<usize, U2>;
-
 
 impl Bounds2u {
     pub fn index_inside(&self) -> Vec<Point2u> {
@@ -225,21 +243,6 @@ pub type Bounds2f = Bounds<Float, U2>;
 pub type Bounds3i = Bounds<Integer, U3>;
 pub type Bounds3f = Bounds<Float, U3>;
 
-
-fn min<T: PartialOrd>(lhs: T, rhs: T) -> T {
-    if rhs < lhs {
-        rhs
-    } else {
-        lhs
-    }
-}
-fn max<T: PartialOrd>(lhs: T, rhs: T) -> T {
-    if rhs > lhs {
-        rhs
-    } else {
-        lhs
-    }
-}
 fn is_positive(f: Float) -> usize {
     if f >= 0. {
         1

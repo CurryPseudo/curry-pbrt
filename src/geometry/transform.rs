@@ -122,6 +122,6 @@ pub fn parse_transform(segment: &BlockSegment) -> Option<Transform> {
             property_set[1].get_float().unwrap(),
             property_set[2].get_float().unwrap(),
         ))),
-        _ => None
+        _ => None,
     }
 }
