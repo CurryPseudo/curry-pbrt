@@ -1,5 +1,5 @@
 Camera "perspective" "float fov" [ 40.0 ]
-Sampler "halton" "integer pixelsamples" [ 1 ]
+Sampler "halton" "integer pixelsamples" [ 16 ]
 Film "image"
 	"string filename" ["image/sphere.png"]
 	"integer xresolution" [ 1200 ]

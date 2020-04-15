@@ -3,7 +3,7 @@ use crate::{geometry::Ray, sampler::SamplerWrapper, scene::Scene, spectrum::Spec
 mod direct_light;
 pub use direct_light::*;
 
-pub trait Integrator {
+pub trait Integrator: Sync {
     fn li(&self, ray: &Ray, scene: &Scene, sampler: &mut SamplerWrapper) -> Spectrum;
 }
 

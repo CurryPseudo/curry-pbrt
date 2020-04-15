@@ -13,7 +13,7 @@ use crate::{
 pub use distant::*;
 pub use point::*;
 
-pub trait Light {
+pub trait Light: Sync {
     fn visibility_test_ray(&self, point: &Point3f, wi: &Vector3f) -> Ray;
     fn sample_li_with_visibility_test(
         &self,
@@ -75,7 +75,7 @@ pub trait DeltaLight: Clone + Transformable {
     fn sample_li(&self, point: &Point3f) -> (Vector3f, Option<Spectrum>);
     fn visibility_test_ray(&self, point: &Point3f, wi: &Vector3f) -> Ray;
 }
-impl<T: DeltaLight + 'static> Light for T {
+impl<T: DeltaLight + 'static + Sync> Light for T {
     fn visibility_test_ray(&self, point: &Point3f, wi: &Vector3f) -> Ray {
         self.visibility_test_ray(point, wi)
     }

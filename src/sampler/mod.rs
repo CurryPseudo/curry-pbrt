@@ -4,8 +4,9 @@ use std::{collections::VecDeque, sync::Mutex};
 mod halton;
 pub use halton::*;
 
-pub trait Sampler {
+pub trait Sampler: Sync + Send {
     fn get_sample(&mut self, index: usize, dim: usize) -> Float;
+    fn box_clone(&self) -> Box<dyn Sampler>;
 }
 
 pub struct SamplerWrapper {
@@ -14,6 +15,18 @@ pub struct SamplerWrapper {
     sample_index: usize,
     sample_per_pixel: usize,
     dim: usize,
+}
+
+impl Clone for SamplerWrapper {
+    fn clone(&self) -> Self {
+        Self {
+            sampler: self.sampler.box_clone(),
+            pixel_index: self.pixel_index,
+            sample_index: self.sample_index,
+            sample_per_pixel: self.sample_per_pixel,
+            dim: self.dim
+        }
+    }
 }
 
 impl SamplerWrapper {
@@ -77,8 +90,7 @@ pub fn parse_sampler(segment: &BlockSegment) -> Option<SamplerWrapper> {
         let pixel_samples = property_set.get_value("pixelsamples").unwrap();
         let sampler = SamplerWrapper::new(Box::new(HaltonSampler::new()), pixel_samples);
         Some(sampler)
-    }
-    else {
+    } else {
         panic!()
     }
 }

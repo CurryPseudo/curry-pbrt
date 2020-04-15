@@ -86,6 +86,7 @@ fn radical_inverse(mut x: usize, base: usize) -> Float {
     }
     accumulated as Float / (base as Float).powf(digit_count as Float)
 }
+#[derive(Clone)]
 pub struct HaltonSampler {}
 impl HaltonSampler {
     pub fn new() -> Self {
@@ -95,5 +96,8 @@ impl HaltonSampler {
 impl Sampler for HaltonSampler {
     fn get_sample(&mut self, index: usize, dim: usize) -> Float {
         radical_inverse_index(index, dim)
+    }
+    fn box_clone(&self) -> Box<dyn Sampler> {
+        Box::new(self.clone())
     }
 }

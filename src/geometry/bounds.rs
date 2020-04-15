@@ -216,6 +216,10 @@ impl Bounds2u {
         }
         r
     }
+    pub fn point_to_offset(&self, point: &Point2u) -> usize {
+        let o = point - self.min;
+        o.x + o.y * self.diagonal().x
+    }
 }
 pub type Bounds2f = Bounds<Float, U2>;
 pub type Bounds3i = Bounds<Integer, U3>;

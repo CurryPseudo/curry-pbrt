@@ -1,7 +1,7 @@
 use crate::math::clamp;
 use crate::{
     def::Float,
-    geometry::{Bounds2u, Point2u, Vector2u, Vector2f},
+    geometry::{Bounds2u, Point2u, Vector2f, Vector2u},
     scene_file_parser::BlockSegment,
     spectrum::Spectrum,
 };
@@ -9,33 +9,41 @@ use png::HasParameters;
 use png::{BitDepth, ColorType, Encoder};
 use std::{fs::File, io::BufWriter, path::Path};
 
-pub struct Film {
-    pub(crate) resolution: Vector2u,
-    pixels: Vec<Spectrum>,
-}
-
-impl Film {
-    pub fn new(resolution: Vector2u) -> Self {
-        let pixels = vec![Spectrum::new(0.); resolution.x * resolution.y];
-        Self { resolution, pixels }
-    }
-    pub fn bound(&self) -> Bounds2u {
-        Bounds2u::new(Point2u::new(0, 0), Point2u::from(self.resolution))
-    }
+pub trait Renderable {
+    fn bound(&self) -> &Bounds2u;
     fn point_to_index(&self, point: &Point2u) -> usize {
-        point.x + point.y * self.resolution.x
+        self.bound().point_to_offset(point)
     }
-    pub fn add_sample(&mut self, point: &Point2u, spectrum: Spectrum) {
+    fn get_pixels(&mut self) -> &mut Vec<Spectrum>;
+    fn add_sample(&mut self, point: &Point2u, spectrum: Spectrum) {
         let index = self.point_to_index(point);
-        self.pixels[index] += spectrum;
+        self.get_pixels()[index] += spectrum;
     }
-    pub fn add_samples(&mut self, point: &Point2u, sampels: &[(Vector2f, Spectrum)]) {
+    fn add_samples(&mut self, point: &Point2u, sampels: &[(Vector2f, Spectrum)]) {
         let mut sum = Spectrum::new(0.);
         for sample in sampels {
             sum += sample.1;
         }
         sum /= sampels.len() as Float;
         self.add_sample(point, sum);
+    }
+}
+
+pub struct Film {
+    pub(crate) resolution: Vector2u,
+    pixels: Vec<Spectrum>,
+    bound: Bounds2u,
+}
+
+impl Film {
+    pub fn new(resolution: Vector2u) -> Self {
+        let pixels = vec![Spectrum::new(0.); resolution.x * resolution.y];
+        let bound = Bounds2u::new(Point2u::new(0, 0), Point2u::from(resolution));
+        Self {
+            resolution,
+            pixels,
+            bound,
+        }
     }
     pub fn write_image(self, file_path: &Path) {
         let file = File::create(file_path).unwrap();
@@ -52,6 +60,43 @@ impl Film {
         }
         writer.write_image_data(&data).unwrap()
     }
+    pub fn gen_tiles(&self) -> Vec<FilmTile> {
+        let tile_size = 16;
+        let tile_indices = Bounds2u::new(
+            Point2u::new(0, 0),
+            Point2u::new(
+                self.resolution.x / tile_size + 1,
+                self.resolution.y / tile_size + 1,
+            ),
+        );
+        let self_bound = self.bound();
+        let mut r = Vec::new();
+        for tile_index in tile_indices.index_inside() {
+            let next = Point2u::new(tile_index.x + 1, tile_index.y + 1);
+            let bound = Bounds2u::new(tile_index * tile_size, next * tile_size) & &self_bound;
+            r.push(FilmTile::new(
+                bound,
+                tile_indices.point_to_offset(&tile_index) * tile_size,
+            ));
+        }
+        r
+    }
+    pub fn merge_tile(&mut self, tile: FilmTile) {
+        for (p, s) in tile.into_merge() {
+            self.add_sample(&p, s);
+        }
+    }
+}
+impl Renderable for Film {
+    fn bound(&self) -> &Bounds2u {
+        &self.bound
+    }
+    fn point_to_index(&self, point: &Point2u) -> usize {
+        point.x + point.y * self.resolution.x
+    }
+    fn get_pixels(&mut self) -> &mut Vec<Spectrum> {
+        &mut self.pixels
+    }
 }
 pub fn parse_film(segment: &BlockSegment) -> Option<(Film, String, Vector2u)> {
     let property_set = segment.get_object_by_type("Film").unwrap();
@@ -65,5 +110,43 @@ pub fn parse_film(segment: &BlockSegment) -> Option<(Film, String, Vector2u)> {
         Some((Film::new(resolution), file_name, resolution))
     } else {
         panic!()
+    }
+}
+
+pub struct FilmTile {
+    bound: Bounds2u,
+    pixels: Vec<Spectrum>,
+    pixel_begin_index: usize,
+}
+
+impl FilmTile {
+    pub fn new(bound: Bounds2u, pixel_begin_index: usize) -> Self {
+        let d = bound.diagonal();
+        Self {
+            bound,
+            pixels: vec![Spectrum::new(0.); d.x * d.y],
+            pixel_begin_index,
+        }
+    }
+    pub fn get_pixel_begin_index(&self) -> usize {
+        self.pixel_begin_index
+    }
+    pub fn into_merge(self) -> Vec<(Point2u, Spectrum)> {
+        let mut index = 0;
+        let d = self.bound.diagonal();
+        let min = self.bound.min;
+        self.pixels.into_iter().map(|s|{
+            let r = (Point2u::new(index % d.x, index / d.x) + min.coords, s);
+            index += 1;
+            r
+        }).collect()
+    }
+}
+impl Renderable for FilmTile {
+    fn bound(&self) -> &Bounds2u {
+        &self.bound
+    }
+    fn get_pixels(&mut self) -> &mut Vec<Spectrum> {
+        &mut self.pixels
     }
 }

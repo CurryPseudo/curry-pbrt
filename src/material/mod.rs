@@ -29,7 +29,7 @@ impl<'a> MaterialIntersect<'a> {
             .compute_scattering_functions(&self.shape_intersect)
     }
 }
-pub trait Material: Debug {
+pub trait Material: Debug + Sync {
     fn compute_scattering_functions(&self, shape_intersect: &ShapeIntersect) -> Box<dyn BRDF>;
     fn box_clone(&self) -> Box<dyn Material>;
 }

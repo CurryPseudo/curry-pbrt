@@ -4,11 +4,11 @@ use super::{
 use crate::{def::Float, scene_file_parser::PropertySet};
 mod sphere;
 mod transform;
-use downcast_rs::Downcast;
+use downcast_rs::{DowncastSync, Downcast};
 pub use sphere::*;
 pub use transform::*;
 
-pub trait Shape: Downcast {
+pub trait Shape: DowncastSync {
     fn bound(&self) -> Bounds3f;
     fn intersect(&self, ray: &Ray) -> Option<ShapeIntersect>;
     fn intersect_predicate(&self, ray: &Ray) -> bool {
@@ -23,7 +23,7 @@ pub trait Shape: Downcast {
     }
 }
 
-impl_downcast!(Shape);
+impl_downcast!(sync Shape);
 
 pub fn shape_apply(shape: Box<dyn Shape>, transform: &Transform) -> Box<dyn Shape> {
     match shape.downcast::<TransformShape>() {
