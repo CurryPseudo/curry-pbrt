@@ -2,8 +2,8 @@ Camera "perspective" "float fov" [ 40.0 ]
 Sampler "halton" "integer pixelsamples" [ 1 ]
 Film "image"
 	"string filename" ["image/sphere.png"]
-	"integer xresolution" [ 1224 ]
-	"integer yresolution" [ 768 ]
+	"integer xresolution" [ 1200 ]
+	"integer yresolution" [ 1600 ]
 
 Integrator "directlighting" 
 	"integer maxdepth" [ 1 ]
@@ -16,8 +16,16 @@ Translate 0. 0. 5.
 
 Shape "sphere" "float radius" [ 1.0 ]
 
-Translate 0.6 1. 3.
+Translate 0.3 0.6 3.5
+
+Shape "sphere" "float radius" [ 0.03 ]
+
+Translate 0.6 1. 2.
 
 LightSource "point" "rgb I" [ 1. 1. 1. ]
+
+Translate 0.6 2. 3.
+
+#LightSource "point" "rgb I" [ 1. 1. 1. ]
 
 WorldEnd

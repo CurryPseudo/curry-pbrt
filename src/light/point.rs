@@ -37,7 +37,7 @@ impl Light for PointLight {
     }
     fn sample_li(
         &self,
-        point: Point3f,
+        point: &Point3f,
         sampler: &mut SamplerWrapper,
     ) -> WithPdf<(Vector3f, Option<Spectrum>)> {
         sampler.get_2d();
@@ -50,5 +50,9 @@ impl Light for PointLight {
     }
     fn box_apply(&mut self, transform: &Transform) -> Box<dyn Light> {
         Box::new(self.clone().apply(transform))
+    }
+    fn visibility_test_ray(&self, point: &Point3f, wi: &Vector3f) -> Ray {
+        let t = (self.point - point).magnitude();
+        Ray::new(*point, *wi, t)
     }
 }

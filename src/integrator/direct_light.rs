@@ -26,9 +26,9 @@ impl Integrator for DirectLightIntegrator {
             let point = &intersect.shape_intersect.p;
             {
                 // sample light
-                let li_pdf = light.sample_li(intersect.shape_intersect.p, sampler);
+                let li_pdf = light.sample_li_with_visibility_test(&intersect.shape_intersect.p, sampler, scene);
                 if let (wi, Some(li)) = li_pdf.t {
-                    let f_pdf = brdf.f_pdf(&wo, &wi);
+                    let f_pdf = brdf.f_pdf(&wo, &wi, &intersect.shape_intersect.n);
                     if let Some(f) = f_pdf.t {
                         l += li * f * power_heuristic(li_pdf.pdf, f_pdf.pdf) / li_pdf.pdf;
                     }
@@ -46,6 +46,7 @@ impl Integrator for DirectLightIntegrator {
                     }
                 }
             }
+            l *= lights.len() as Float;
         } else {
             for light in scene.get_lights() {
                 l += light.le(ray);

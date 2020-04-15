@@ -11,7 +11,7 @@ impl LambertianReflection {
 
 
 impl BRDF for LambertianReflection {
-    fn f(&self, _: &Vector3f, _: &Vector3f) -> Option<Spectrum> {
+    fn brdf_f(&self, _: &Vector3f, _: &Vector3f) -> Option<Spectrum> {
         Some(self.r.clone() / INV_PI)
     }
 }
