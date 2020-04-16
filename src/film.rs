@@ -7,7 +7,12 @@ use crate::{
 };
 use png::HasParameters;
 use png::{BitDepth, ColorType, Encoder};
-use std::{fmt::{Debug, Display}, fs::File, io::BufWriter, path::Path};
+use std::{
+    fmt::{Debug, Display},
+    fs::File,
+    io::BufWriter,
+    path::Path,
+};
 
 pub trait Renderable {
     fn bound(&self) -> &Bounds2u;
@@ -52,11 +57,27 @@ impl Film {
         encoder.set(ColorType::RGB).set(BitDepth::Eight);
         let mut writer = encoder.write_header().unwrap();
         let mut data = Vec::new();
+        let mut floats = Vec::new();
         for pixel in self.pixels {
             let [r, g, b]: [Float; 3] = pixel.into();
-            data.push(clamp(gamma_correct(r) * 255. + 0.5, 0., 255.) as u8);
-            data.push(clamp(gamma_correct(g) * 255. + 0.5, 0., 255.) as u8);
-            data.push(clamp(gamma_correct(b) * 255. + 0.5, 0., 255.) as u8);
+            floats.push(r);
+            floats.push(g);
+            floats.push(b);
+        }
+        let mut f_min = None;
+        let mut f_max = None;
+        for float in &floats {
+            f_min = Some(f_min.map_or(*float, |f_min| min(f_min, *float)));
+            f_max = Some(f_max.map_or(*float, |f_max| max(f_max, *float)));
+        }
+        let f_min = f_min.unwrap();
+        let f_max = f_max.unwrap();
+        for float in floats {
+            data.push(clamp(
+                gamma_correct(rlerp(float, f_min, f_max)) * 255. + 0.5,
+                0.,
+                255.,
+            ) as u8);
         }
         writer.write_image_data(&data).unwrap()
     }
