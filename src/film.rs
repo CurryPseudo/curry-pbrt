@@ -74,7 +74,7 @@ impl Film {
         let f_max = f_max.unwrap();
         for float in floats {
             data.push(clamp(
-                gamma_correct(rlerp(float, f_min, f_max)) * 255. + 0.5,
+                gamma_correct(rlerp(float, 0., f_max)) * 255. + 0.5,
                 0.,
                 255.,
             ) as u8);

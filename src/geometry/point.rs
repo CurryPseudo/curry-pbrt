@@ -37,7 +37,6 @@ pub fn cosine_sample_hemisphere(u: Point2f) -> WithPdf<Vector3f> {
 impl ParseFromProperty for Point3f {
     fn parse_from_property(_: &str, basic_type: &BasicTypes) -> Self {
         let floats = basic_type.get_floats().unwrap();
-        trace!("Parse point {}", Point3f::new(floats[0], floats[1], floats[2]));
         Point3f::new(floats[0], floats[1], floats[2])
     }
     fn parse_default() -> Self {

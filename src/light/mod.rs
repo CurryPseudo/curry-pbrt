@@ -46,6 +46,9 @@ pub trait Light: Sync {
         WithPdf::new(self.le(ray), self.pdf(ray))
     }
     fn box_apply(&mut self, transform: &Transform) -> Box<dyn Light>;
+    fn is_delta(&self) -> bool {
+        false
+    }
 }
 
 pub fn parse_light(property_set: &PropertySet) -> Box<dyn Light> {
@@ -64,7 +67,6 @@ pub fn parse_light(property_set: &PropertySet) -> Box<dyn Light> {
                 .map_or(Vector3f::new(0., 0., -1.), |from| {
                     property_set.get_value::<Point3f>("to").unwrap() - from
                 });
-            trace!("Distant w {}", w);
             Box::new(DistantLight::new(from, w, i))
         }
         _ => panic!(),
@@ -96,5 +98,8 @@ impl<T: DeltaLight + 'static + Sync> Light for T {
     }
     fn box_apply(&mut self, transform: &Transform) -> Box<dyn Light> {
         Box::new(self.clone().apply(&transform))
+    }
+    fn is_delta(&self) -> bool {
+        true
     }
 }

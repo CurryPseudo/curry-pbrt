@@ -95,6 +95,9 @@ impl HaltonSampler {
 }
 impl Sampler for HaltonSampler {
     fn get_sample(&mut self, index: usize, dim: usize) -> Float {
+        if dim > 4 {
+            trace!("Getting dim {}", dim);
+        }
         radical_inverse_index(index, dim)
     }
     fn box_clone(&self) -> Box<dyn Sampler> {

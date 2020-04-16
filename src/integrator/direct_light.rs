@@ -4,13 +4,13 @@ use crate::{
     spectrum::Spectrum,
 };
 
-pub struct DirectLightIntegrator {
-}
+pub struct DirectLightIntegrator {}
 
 impl DirectLightIntegrator {
-    pub fn new() -> Self { Self {  } }
+    pub fn new() -> Self {
+        Self {}
+    }
 }
-
 
 impl Integrator for DirectLightIntegrator {
     fn li(&self, ray: &Ray, scene: &Scene, sampler: &mut SamplerWrapper) -> Spectrum {
@@ -27,16 +27,24 @@ impl Integrator for DirectLightIntegrator {
             let n = &intersect.shape_intersect.n;
             {
                 // sample light
-                let li_pdf = light.sample_li_with_visibility_test(&intersect.shape_intersect.p, sampler, scene);
+                let li_pdf = light.sample_li_with_visibility_test(
+                    &intersect.shape_intersect.p,
+                    sampler,
+                    scene,
+                );
                 if let (wi, Some(li)) = li_pdf.t {
                     let f_pdf = brdf.f_pdf(&wo, &wi, n);
                     if let Some(f) = f_pdf.t {
-                
-                        l += li * f * n.dot(&wi).abs() * power_heuristic(li_pdf.pdf, f_pdf.pdf) / li_pdf.pdf;
+                        if light.is_delta() {
+                            l += li * f * n.dot(&wi).abs() / li_pdf.pdf;
+                        } else {
+                            l += li * f * n.dot(&wi).abs() * power_heuristic(li_pdf.pdf, f_pdf.pdf)
+                                / li_pdf.pdf;
+                        }
                     }
                 }
             }
-            {
+            if !light.is_delta() {
                 // sample brdf
                 let f_pdf = brdf.sample_f(&wo, sampler);
 
@@ -44,7 +52,8 @@ impl Integrator for DirectLightIntegrator {
                     let ray = Ray::new_od(point.clone(), wi.clone());
                     let li_pdf = light.le_pdf(&ray);
                     if let Some(li) = li_pdf.t {
-                        l += li * f * n.dot(&wi).abs() * power_heuristic(f_pdf.pdf, li_pdf.pdf) / f_pdf.pdf;
+                        l += li * f * n.dot(&wi).abs() * power_heuristic(f_pdf.pdf, li_pdf.pdf)
+                            / f_pdf.pdf;
                     }
                 }
             }

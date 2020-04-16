@@ -21,10 +21,11 @@ pub fn render(
     camera: Box<dyn Camera>,
 ) -> Film {
     let film_tiles = film.gen_tiles();
-    let progress_bar = ProgressBar::new(film.bound().area() as u64);
+    let progress_bar = ProgressBar::new(film_tiles.len() as u64);
     progress_bar.set_style(ProgressStyle::default_bar().template("{bar} ({eta})"));
     let film = Mutex::new(film);
     film_tiles.into_par_iter().for_each(|mut tile| {
+    //film_tiles.into_iter().for_each(|mut tile| {
         let mut sampler = sampler.clone().set_pixel(tile.get_pixel_begin_index());
         for film_point in tile.bound().index_inside() {
             let mut film_point_f = Point2f::new(film_point.x as Float, film_point.y as Float);
@@ -40,9 +41,9 @@ pub fn render(
             }
             tile.add_samples(&film_point, &samples);
             sampler = sampler.next_pixel();
-            progress_bar.inc(1);
         }
         film.lock().unwrap().merge_tile(tile);
+        progress_bar.inc(1);
     });
     progress_bar.finish_and_clear();
     film.into_inner().unwrap()

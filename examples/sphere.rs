@@ -35,10 +35,10 @@ fn main() {
     scene.add_light(point_light);
     scene.add_primitive(sphere);
     let resolution = Vector2u::new(1024, 768);
-    let mut film = Film::new(resolution);
+    let film = Film::new(resolution);
     let sampler = SamplerWrapper::new(Box::new(HaltonSampler::new()), 1);
     let integrator = Box::new(DirectLightIntegrator::new());
     let camera = Box::new(PerspectiveCamera::new(40., resolution));
-    render(scene, sampler, integrator, &mut film, camera);
+    let film = render(scene, sampler, integrator, film, camera);
     film.write_image(&Path::new("image/test.png"));
 }
