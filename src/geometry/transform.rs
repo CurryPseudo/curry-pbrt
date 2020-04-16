@@ -3,11 +3,18 @@ use crate::def::Float;
 use crate::scene_file_parser::BlockSegment;
 use nalgebra::{geometry::Translation, Matrix4};
 use std::collections::VecDeque;
+use std::fmt::Display;
 
 #[derive(Debug, Clone)]
 pub struct Transform {
     pub m: Matrix4<Float>,
     pub m_inv: Matrix4<Float>,
+}
+
+impl Display for Transform {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.m)
+    }
 }
 
 impl Transform {

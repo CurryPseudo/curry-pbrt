@@ -18,10 +18,10 @@ pub struct Scene {
 
 impl Scene {
     pub fn intersect_predicate(&self, ray: &Ray) -> bool {
-        //let ray = RayIntersectCache::from(*ray);
+        let ray = RayIntersectCache::from(*ray);
         for primitive in &self.primitives {
-            //if primitive.intersect_predicate_through_bound(&ray) {
-            if primitive.intersect_predicate(&ray) {
+            if primitive.intersect_predicate_through_bound(&ray) {
+            //if primitive.intersect_predicate(&ray) {
                 return true;
             }
         }
@@ -29,10 +29,10 @@ impl Scene {
     }
     pub fn intersect(&self, ray: &Ray) -> Option<MaterialIntersect> {
         let mut intersect: Option<MaterialIntersect> = None;
-        //let ray = RayIntersectCache::from(*ray);
+        let ray = RayIntersectCache::from(*ray);
         for primitive in &self.primitives {
-            //let this_intersect = primitive.intersect_through_bound(&ray);
-            let this_intersect = primitive.intersect(&ray);
+            let this_intersect = primitive.intersect_through_bound(&ray);
+            //let this_intersect = primitive.intersect(&ray);
             if let Some(intersect) = &mut intersect {
                 if let Some(this_intersect) = this_intersect {
                     if this_intersect.shape_intersect.t < intersect.shape_intersect.t {

@@ -20,6 +20,15 @@ pub trait Sampler: Sync + Send {
             r
         }
     }
+    fn get_usize(&mut self, max: usize) -> usize {
+        let r = (self.get_sample() * (max as Float)).trunc() as usize;
+        if r == max {
+            max - 1
+        }
+        else {
+            r
+        }
+    }
     fn get_2d(&mut self) -> Point2f {
         Point2f::new(self.get_1d(), self.get_1d())
     }

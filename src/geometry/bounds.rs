@@ -32,7 +32,7 @@ where
     pub max: Point<T, N>,
 }
 
-impl<T: BoundsTrait + Display, N: DimName> Display for Bounds<T, N> 
+impl<T: BoundsTrait + Display, N: DimName> Display for Bounds<T, N>
 where
     DefaultAllocator: Allocator<T, N>,
 {
@@ -255,7 +255,7 @@ impl Transformable for Bounds3f {
     fn apply(self, transform: &Transform) -> Self {
         let mut r = Self::from(self.min.apply(transform));
         for i in 1..8 {
-            r = r | &self.corner(i)
+            r = r | &self.corner(i).apply(transform)
         }
         r
     }
@@ -265,25 +265,37 @@ impl Bounds3f {
     pub fn intersect_predicate(&self, ray: &Ray) -> bool {
         self.intersect_predicate_cached(&RayIntersectCache::from(ray.clone()))
     }
+    fn intersect_component(&self, ray: &RayIntersectCache, c: usize) -> Option<(Float, Float)> {
+        if ray.ray.d[c] == 0. {
+            None
+        } else {
+            Some((
+                (self[ray.is_negative_d[c]][c] - ray.ray.o[c]) * ray.inverse_d[c],
+                (self[ray.is_positive_d[c]][c] - ray.ray.o[c]) * ray.inverse_d[c],
+            ))
+        }
+    }
     pub fn intersect_predicate_cached(&self, ray: &RayIntersectCache) -> bool {
-        let o = ray.ray.o;
-        let t_min = (self[ray.is_negative_d.x].x - o.x) * ray.inverse_d.x;
-        let t_max = (self[ray.is_positive_d.x].x - o.x) * ray.inverse_d.x;
-        let t_y_min = (self[ray.is_negative_d.y].y - o.y) * ray.inverse_d.y;
-        let t_y_max = (self[ray.is_positive_d.y].y - o.y) * ray.inverse_d.y;
-        if t_min > t_y_max || t_y_min > t_max {
-            return false;
+        let mut pair = None;
+        for i in 0..3 {
+            if let Some((t_min, t_max)) = &mut pair {
+                if let Some((t_next_min, t_next_max)) = self.intersect_component(ray, i) {
+                    if *t_min > t_next_max || t_next_min > *t_max {
+                        return false;
+                    }
+                    *t_min = min(*t_min, t_next_min);
+                    *t_max = max(*t_max, t_next_max);
+                }
+            } else {
+                pair = self.intersect_component(ray, i);
+            }
         }
-        let t_min = min(t_min, t_y_min);
-        let t_max = max(t_max, t_y_max);
-
-        let t_z_min = (self[ray.is_negative_d.z].z - o.z) * ray.inverse_d.z;
-        let t_z_max = (self[ray.is_positive_d.z].z - o.z) * ray.inverse_d.z;
-
-        if t_min > t_z_max || t_z_min > t_max {
-            return false;
+        if let Some((t_min, t_max)) = pair {
+            t_min < ray.ray.t_max && t_max > 0.
         }
-        t_min < ray.ray.t_max && t_max > 0.
+        else {
+            false
+        }
     }
 }
 
@@ -292,6 +304,16 @@ pub struct RayIntersectCache {
     inverse_d: Vector3f,
     is_positive_d: Vector3<usize>,
     is_negative_d: Vector3<usize>,
+}
+
+impl Display for RayIntersectCache {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} inverse_d {} is_positive {} is_negative {}",
+            self.ray, self.inverse_d, self.is_positive_d, self.is_negative_d
+        )
+    }
 }
 impl RayIntersectCache {
     pub fn origin_ray(&self) -> &Ray {

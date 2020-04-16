@@ -13,7 +13,7 @@ WorldBegin
 Material "matte" "rgb Kd" [ 0.5 0.4 0.3 ]
 
 AttributeBegin
-	Translate -1. 1. 5.
+	Translate -1. 1. 3.
 	LightSource "point" "rgb I" [ 1. 1. 1. ]
 AttributeEnd
 
@@ -30,19 +30,19 @@ AttributeBegin
 AttributeEnd
 
 AttributeBegin
-	Translate 0.6 0.6 3.5
-	Shape "sphere" "float radius" [ 0.03 ]
+	Translate 0.3 0.3 2
+	Shape "sphere" "float radius" [ 0.2 ]
 AttributeEnd
 
 AttributeBegin
-	Translate 0 0. 3.5
+	Translate 2 2. 3.5
 	LightSource "point" "rgb I" [ 1. 1. 1. ]
 AttributeEnd
 
 AttributeBegin
 	Translate 0.6 2. 3.
 	LightSource "distant" 
-		"rgb L" [ 0.3 0.3 0.3 ] 
+		"rgb L" [ 0.1 0.1 0.1 ] 
 		"point from" [0 0 0]
 		"point to" [0 0 1]
 AttributeEnd

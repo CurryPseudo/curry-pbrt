@@ -21,7 +21,7 @@ impl Integrator for DirectLightIntegrator {
             }
             let wo = -ray.d.normalize();
             let lights = scene.get_lights();
-            let light = &lights[(sampler.get_1d() * lights.len() as Float) as usize];
+            let light = &lights[(sampler.get_usize(lights.len())) as usize];
             let brdf = intersect.compute_scattering_functions();
             let point = &intersect.shape_intersect.p;
             let n = &intersect.shape_intersect.n;
