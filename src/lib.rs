@@ -4,6 +4,9 @@ extern crate log;
 #[macro_use]
 extern crate downcast_rs;
 
+#[macro_use]
+extern crate lazy_static;
+
 pub mod camera;
 pub mod def;
 pub mod film;

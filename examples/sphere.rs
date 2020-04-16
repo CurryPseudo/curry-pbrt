@@ -7,7 +7,7 @@ use curry_pbrt::{
     material::MatteMaterial,
     primitive::Primitive,
     render::render,
-    sampler::{HaltonSampler, SamplerWrapper},
+    sampler::{HaltonSampler},
     scene::Scene,
     spectrum::Spectrum,
     texture::Texture,
@@ -36,7 +36,7 @@ fn main() {
     scene.add_primitive(sphere);
     let resolution = Vector2u::new(1024, 768);
     let film = Film::new(resolution);
-    let sampler = SamplerWrapper::new(Box::new(HaltonSampler::new()), 1);
+    let sampler = Box::new(HaltonSampler::new(1, resolution));
     let integrator = Box::new(DirectLightIntegrator::new());
     let camera = Box::new(PerspectiveCamera::new(40., resolution));
     let film = render(scene, sampler, integrator, film, camera);

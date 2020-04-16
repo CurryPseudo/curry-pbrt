@@ -4,7 +4,7 @@ use crate::{
     def::Float,
     geometry::{Point3f, Ray, Transform, Transformable, Vector3f},
     math::WithPdf,
-    sampler::SamplerWrapper,
+    sampler::Sampler,
     scene::Scene,
     scene_file_parser::PropertySet,
     spectrum::Spectrum,
@@ -18,7 +18,7 @@ pub trait Light: Sync {
     fn sample_li_with_visibility_test(
         &self,
         point: &Point3f,
-        sampler: &mut SamplerWrapper,
+        sampler: &mut dyn Sampler,
         scene: &Scene,
     ) -> WithPdf<(Vector3f, Option<Spectrum>)> {
         let li_pdf = self.sample_li(point, sampler);
@@ -38,7 +38,7 @@ pub trait Light: Sync {
     fn sample_li(
         &self,
         point: &Point3f,
-        sampler: &mut SamplerWrapper,
+        sampler: &mut dyn Sampler,
     ) -> WithPdf<(Vector3f, Option<Spectrum>)>;
     fn le(&self, ray: &Ray) -> Option<Spectrum>;
     fn pdf(&self, ray: &Ray) -> Float;
@@ -84,7 +84,7 @@ impl<T: DeltaLight + 'static + Sync> Light for T {
     fn sample_li(
         &self,
         point: &Point3f,
-        sampler: &mut SamplerWrapper,
+        sampler: &mut dyn Sampler,
     ) -> WithPdf<(Vector3f, Option<Spectrum>)> {
         sampler.get_2d();
         let (wi, li) = self.sample_li(point);

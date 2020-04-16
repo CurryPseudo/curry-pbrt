@@ -178,11 +178,13 @@ dependencies = [
  "derive_more",
  "downcast-rs",
  "indicatif",
+ "lazy_static",
  "log",
  "nalgebra",
  "num-traits",
  "png",
  "pretty_env_logger",
+ "rand",
  "rayon",
 ]
 

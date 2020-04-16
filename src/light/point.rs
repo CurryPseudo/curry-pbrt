@@ -3,7 +3,7 @@ use crate::{
     def::Float,
     geometry::{Point3f, Ray, Transform, Transformable, Vector3f},
     math::WithPdf,
-    sampler::SamplerWrapper,
+    sampler::Sampler,
     spectrum::Spectrum,
 };
 

@@ -1,6 +1,6 @@
 use super::Integrator;
 use crate::{
-    def::Float, geometry::Ray, math::power_heuristic, sampler::SamplerWrapper, scene::Scene,
+    def::Float, geometry::Ray, math::power_heuristic, sampler::Sampler, scene::Scene,
     spectrum::Spectrum,
 };
 
@@ -13,7 +13,7 @@ impl DirectLightIntegrator {
 }
 
 impl Integrator for DirectLightIntegrator {
-    fn li(&self, ray: &Ray, scene: &Scene, sampler: &mut SamplerWrapper) -> Spectrum {
+    fn li(&self, ray: &Ray, scene: &Scene, sampler: &mut dyn Sampler) -> Spectrum {
         let mut l = Spectrum::new(0.);
         if let Some(intersect) = scene.intersect(ray) {
             if ray.d.x == 0. && ray.d.y == 0. {

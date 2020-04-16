@@ -1,9 +1,6 @@
-use super::{DeltaLight, Light};
+use super::DeltaLight;
 use crate::{
-    def::Float,
     geometry::{Point3f, Ray, Transform, Transformable, Vector3f},
-    math::WithPdf,
-    sampler::SamplerWrapper,
     spectrum::Spectrum,
 };
 

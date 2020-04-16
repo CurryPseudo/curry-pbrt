@@ -1,10 +1,10 @@
-use crate::{geometry::Ray, sampler::SamplerWrapper, scene::Scene, spectrum::Spectrum, scene_file_parser::BlockSegment};
+use crate::{geometry::Ray, sampler::Sampler, scene::Scene, spectrum::Spectrum, scene_file_parser::BlockSegment};
 
 mod direct_light;
 pub use direct_light::*;
 
 pub trait Integrator: Sync {
-    fn li(&self, ray: &Ray, scene: &Scene, sampler: &mut SamplerWrapper) -> Spectrum;
+    fn li(&self, ray: &Ray, scene: &Scene, sampler: &mut dyn Sampler) -> Spectrum;
 }
 
 pub fn parse_integrator(segment: &BlockSegment) -> Option<Box<dyn Integrator>> {
