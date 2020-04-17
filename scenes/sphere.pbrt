@@ -1,9 +1,13 @@
-Camera "perspective" "float fov" [ 40.0 ]
-Sampler "halton" "integer pixelsamples" [ 1 ]
 Film "image"
 	"string filename" ["image/sphere.png"]
 	"integer xresolution" [ 1600 ]
 	"integer yresolution" [ 1200 ]
+
+Sampler "halton" "integer pixelsamples" [ 64 ]
+
+Translate 0 0 -5
+
+Camera "perspective" "float fov" [ 40.0 ]
 
 Integrator "directlighting" 
 	"integer maxdepth" [ 0 ]
@@ -30,15 +34,15 @@ AttributeBegin
 AttributeEnd
 
 AttributeBegin
-	Translate 0.5 0.5 2
+	Translate 0.5 0.5 3.5
 	Shape "sphere" "float radius" [ 0.2 ]
 AttributeEnd
 
 AttributeBegin
 	# LightSource "point" 
 	AreaLightSource "diffuse" "rgb L" [ 6. 6. 6. ]
-	Translate 0.8 0.8 1
-	Shape "sphere" "float radius" [0.2]
+	Translate 2 2 2
+	Shape "sphere" "float radius" [0.8]
 AttributeEnd
 
 # AttributeBegin

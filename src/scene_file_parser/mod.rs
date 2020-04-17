@@ -106,13 +106,13 @@ impl BlockSegment {
             _ => None,
         }
     }
-    pub fn get_object_by_type(&self, object_type: &str) -> Option<&PropertySet> {
+    pub fn get_object_by_type(&self, to_find_object_type: &str) -> Option<&PropertySet> {
         match self {
             BlockSegment::Object {
                 object_type,
                 object_value,
             } => {
-                if object_type == object_type {
+                if object_type == to_find_object_type {
                     Some(object_value)
                 } else {
                     None
@@ -135,6 +135,11 @@ impl BlockSegment {
         }
         None
     }
+}
+
+pub trait ParseFromBlockSegment {
+    type T;
+    fn parse_from_segment(segment: &BlockSegment) -> Option<Self::T>;
 }
 #[derive(Debug)]
 pub struct PropertySet(Vec<Property>);

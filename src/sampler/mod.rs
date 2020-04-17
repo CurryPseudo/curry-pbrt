@@ -1,7 +1,7 @@
 use crate::{
     def::Float,
     geometry::{Point2f, Point2u, Vector2u},
-    scene_file_parser::BlockSegment,
+    scene_file_parser::{BlockSegment, ParseFromBlockSegment},
 };
 
 mod halton;
@@ -24,8 +24,7 @@ pub trait Sampler: Sync + Send {
         let r = (self.get_sample() * (max as Float)).trunc() as usize;
         if r == max {
             max - 1
-        }
-        else {
+        } else {
             r
         }
     }
@@ -41,12 +40,20 @@ pub trait Sampler: Sync + Send {
     fn get_sample_per_pixel(&self) -> usize;
 }
 
-pub fn parse_sampler(segment: &BlockSegment) -> Option<Box<dyn FnOnce(Vector2u) -> Box<dyn Sampler>>> {
-    let property_set = segment.get_object_by_type("Sampler").unwrap();
-    if property_set.get_name().unwrap() == "halton" {
-        let pixel_samples = property_set.get_value("pixelsamples").unwrap();
-        Some(Box::new(move |resolution| Box::new(HaltonSampler::new(pixel_samples, resolution))))
-    } else {
-        panic!()
+impl ParseFromBlockSegment for Box<dyn Sampler> {
+    type T = Box<dyn FnOnce(Vector2u) -> Box<dyn Sampler>>;
+    fn parse_from_segment(
+        segment: &BlockSegment,
+    ) -> Option<Self::T> {
+        let property_set = segment.get_object_by_type("Sampler")?;
+        if property_set.get_name().unwrap() == "halton" {
+            let pixel_samples = property_set.get_value("pixelsamples").unwrap();
+            Some(Box::new(move |resolution| {
+                Box::new(HaltonSampler::new(pixel_samples, resolution))
+            }))
+        } else {
+            panic!()
+        }
     }
 }
+

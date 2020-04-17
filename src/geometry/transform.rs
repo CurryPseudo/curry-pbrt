@@ -1,6 +1,7 @@
 use super::Vector3f;
 use crate::def::Float;
-use crate::scene_file_parser::BlockSegment;
+use crate::scene_file_parser::{BlockSegment, ParseFromBlockSegment};
+use downcast_rs::DowncastSync;
 use nalgebra::Matrix4;
 use std::fmt::Display;
 
@@ -120,8 +121,10 @@ impl Transformable for Transform {
     }
 }
 
-pub fn parse_transform(segment: &BlockSegment) -> Option<Transform> {
-    let (transform_type, property_set) = segment.get_object().unwrap();
+impl ParseFromBlockSegment for Transform {
+    type T = Transform;
+    fn parse_from_segment(segment: &BlockSegment) -> Option<Self::T> {
+    let (transform_type, property_set) = segment.get_object()?;
     match transform_type {
         "Translate" => Some(Transform::translate(Vector3f::new(
             property_set[0].get_float().unwrap(),
@@ -129,5 +132,7 @@ pub fn parse_transform(segment: &BlockSegment) -> Option<Transform> {
             property_set[2].get_float().unwrap(),
         ))),
         _ => None,
+    }
+        
     }
 }

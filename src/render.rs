@@ -1,12 +1,12 @@
-use crate::scene_file_parser::read_scene;
+use crate::scene_file_parser::{read_scene, BlockSegment, ParseFromBlockSegment};
 use crate::{
-    camera::{parse_camera, Camera},
+    camera::{camera_apply, Camera},
     def::Float,
-    film::{parse_film, Film, Renderable},
-    geometry::Point2f,
-    integrator::{parse_integrator, Integrator},
-    sampler::{parse_sampler, Sampler},
-    scene::{parse_scene, Scene},
+    film::{Film, Renderable},
+    geometry::{Transform, Point2f},
+    integrator::Integrator,
+    sampler::Sampler,
+    scene::Scene,
 };
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
@@ -49,15 +49,31 @@ pub fn render(
     film.into_inner().unwrap()
 }
 
+fn parse_find_eat<R: ParseFromBlockSegment>(
+    segments: &mut VecDeque<BlockSegment>,
+) -> Option<R::T> {
+    for i in 0..segments.len() {
+        if let Some(r) = R::parse_from_segment(&segments[i]) {
+            segments.remove(i);
+            return Some(r);
+        }
+    }
+    None
+}
+
 pub fn render_from_file(path: &Path) {
     let mut segments = read_scene(path).into_iter().collect::<VecDeque<_>>();
-    let camera_factory = parse_camera(&segments.pop_front().unwrap()).unwrap();
-    let sampler_factory = parse_sampler(&segments.pop_front().unwrap()).unwrap();
-    let (film, file_name, resolution) = parse_film(&segments.pop_front().unwrap()).unwrap();
-    let camera = camera_factory(resolution);
+    let camera_transform = parse_find_eat::<Transform>(&mut segments);
+    let camera_factory = parse_find_eat::<Box<dyn Camera>>(&mut segments).unwrap();
+    let sampler_factory = parse_find_eat::<Box<dyn Sampler>>(&mut segments).unwrap();
+    let (film, file_name, resolution) = parse_find_eat::<Film>(&mut segments).unwrap();
+    let mut camera = camera_factory(resolution);
+    if let Some(transform) = camera_transform {
+        camera = camera_apply(camera, &transform);
+    }
     let sampler = sampler_factory(resolution);
-    let integrator = parse_integrator(&segments.pop_front().unwrap()).unwrap();
-    let scene = parse_scene(&segments.pop_front().unwrap());
+    let integrator = parse_find_eat::<Box<dyn Integrator>>(&mut segments).unwrap();
+    let scene = parse_find_eat::<Scene>(&mut segments).unwrap();
     let film = render(scene, sampler, integrator, film, camera);
     film.write_image(&Path::new(file_name.as_str()))
 }
