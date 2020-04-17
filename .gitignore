@@ -3,3 +3,5 @@ scenes/landscape
 *.tokens
 *.description
 image
+flame.*
+perf.*
