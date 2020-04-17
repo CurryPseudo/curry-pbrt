@@ -1,8 +1,7 @@
 use super::Vector3f;
 use crate::def::Float;
 use crate::scene_file_parser::BlockSegment;
-use nalgebra::{geometry::Translation, Matrix4};
-use std::collections::VecDeque;
+use nalgebra::Matrix4;
 use std::fmt::Display;
 
 #[derive(Debug, Clone)]

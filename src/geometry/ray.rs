@@ -32,6 +32,9 @@ impl Ray {
     pub fn eval(&self, t: Float) -> Point3f {
         &self.o + &self.d * t
     }
+    pub fn move_a_bit(&mut self) {
+        self.o = self.o + self.d.normalize() * 0.0001;
+    }
 }
 
 impl Transformable for Ray {

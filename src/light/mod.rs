@@ -1,33 +1,35 @@
+mod area;
 mod distant;
 mod point;
 use crate::{
     def::Float,
-    geometry::{Point3f, Ray, Transform, Transformable, Vector3f},
-    math::WithPdf,
+    geometry::{Point3f, Ray, Transform, Transformable, Vector3f, Shape, ShapePoint},
     sampler::Sampler,
     scene::Scene,
     scene_file_parser::PropertySet,
     spectrum::Spectrum,
 };
 
+pub use area::*;
 pub use distant::*;
 pub use point::*;
+use std::sync::Arc;
 
-pub trait Light: Sync {
+pub trait Light: Sync + Send {
     fn visibility_test_ray(&self, point: &Point3f, wi: &Vector3f) -> Ray;
-    fn sample_li_with_visibility_test(
+    fn sample_li(
         &self,
         point: &Point3f,
         sampler: &mut dyn Sampler,
         scene: &Scene,
-    ) -> WithPdf<(Vector3f, Option<Spectrum>)> {
-        let li_pdf = self.sample_li(point, sampler);
-        let (wi, li) = li_pdf.t;
+    ) -> (Vector3f, Option<Spectrum>, Float) {
+        let li_pdf = self.sample_li_without_visibility_test(point, sampler);
+        let (wi, li, pdf) = li_pdf;
         if li.is_some() {
-            let point = point + wi * 0.001;
-            let ray = self.visibility_test_ray(&point, &wi);
+            let mut ray = self.visibility_test_ray(&point, &wi);
+            ray.move_a_bit();
             if scene.intersect_predicate(&ray) {
-                WithPdf::new((wi, None), li_pdf.pdf)
+                (wi, None, pdf)
             } else {
                 li_pdf
             }
@@ -35,19 +37,21 @@ pub trait Light: Sync {
             li_pdf
         }
     }
-    fn sample_li(
+    fn sample_li_without_visibility_test(
         &self,
         point: &Point3f,
         sampler: &mut dyn Sampler,
-    ) -> WithPdf<(Vector3f, Option<Spectrum>)>;
-    fn le(&self, ray: &Ray) -> Option<Spectrum>;
-    fn pdf(&self, ray: &Ray) -> Float;
-    fn le_pdf(&self, ray: &Ray) -> WithPdf<Option<Spectrum>> {
-        WithPdf::new(self.le(ray), self.pdf(ray))
+    ) -> (Vector3f, Option<Spectrum>, Float);
+    fn le_out_scene(&self, _: &Ray) -> Float {
+        0.
     }
-    fn box_apply(&mut self, transform: &Transform) -> Box<dyn Light>;
+    fn le_pdf(&self, ray: &Ray, scene: &Scene) -> (Option<Spectrum>, Float);
+    fn box_apply(&self, transform: &Transform) -> Box<dyn Light>;
     fn is_delta(&self) -> bool {
         false
+    }
+    fn le(&self, _: &ShapePoint) -> Spectrum {
+        Spectrum::new(0.)
     }
 }
 
@@ -72,34 +76,41 @@ pub fn parse_light(property_set: &PropertySet) -> Box<dyn Light> {
         _ => panic!(),
     }
 }
+pub fn parse_area_light(property_set: &PropertySet) -> Box<dyn Fn(Arc<dyn Shape>) -> Box<dyn Light>> {
+    match property_set.get_name().unwrap() {
+        "diffuse" => {
+            let l = property_set.get_default("L");
+            Box::new(move |shape| Box::new(AreaLight::new(shape, l)))
+        }
+        _ => panic!(),
+    }
+
+}
 
 pub trait DeltaLight: Clone + Transformable {
     fn sample_li(&self, point: &Point3f) -> (Vector3f, Option<Spectrum>);
     fn visibility_test_ray(&self, point: &Point3f, wi: &Vector3f) -> Ray;
 }
-impl<T: DeltaLight + 'static + Sync> Light for T {
+impl<T: DeltaLight + 'static + Sync + Send> Light for T {
     fn visibility_test_ray(&self, point: &Point3f, wi: &Vector3f) -> Ray {
         self.visibility_test_ray(point, wi)
     }
-    fn sample_li(
+    fn sample_li_without_visibility_test(
         &self,
         point: &Point3f,
         sampler: &mut dyn Sampler,
-    ) -> WithPdf<(Vector3f, Option<Spectrum>)> {
+    ) -> (Vector3f, Option<Spectrum>, Float) {
         sampler.get_2d();
         let (wi, li) = self.sample_li(point);
-        WithPdf::new((wi, li), 1.)
+        (wi, li, 1.)
     }
-    fn le(&self, _: &Ray) -> Option<Spectrum> {
-        None
-    }
-    fn pdf(&self, _: &Ray) -> Float {
-        0.
-    }
-    fn box_apply(&mut self, transform: &Transform) -> Box<dyn Light> {
+    fn box_apply(&self, transform: &Transform) -> Box<dyn Light> {
         Box::new(self.clone().apply(&transform))
     }
     fn is_delta(&self) -> bool {
         true
+    }
+    fn le_pdf(&self, _: &Ray, _: &Scene) -> (Option<Spectrum>, Float) {
+        (None, 0.)
     }
 }

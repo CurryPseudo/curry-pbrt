@@ -1,9 +1,6 @@
-use crate::def::Float;
+use crate::{geometry::Vector3f, def::Float};
 use alga::general::{ClosedAdd, ClosedDiv, ClosedMul, ClosedSub};
 use num_traits::FromPrimitive;
-
-mod with_pdf;
-pub use with_pdf::*;
 
 pub fn lerp<T: FromPrimitive + ClosedMul + ClosedAdd + ClosedSub + Copy>(
     t: T,
@@ -54,6 +51,16 @@ pub fn gamma_correct(f: Float) -> Float {
     } else {
         1.055 * f.powf(1. / 2.4) - 0.055
     }
+}
+
+pub fn coordinate_system(z: &Vector3f) -> (Vector3f, Vector3f) {
+    let x = if z.x.abs() > z.y.abs() {
+        Vector3f::new(-z.z, 0., z.x) / (z.x * z.x + z.z * z.z).sqrt()
+    }
+    else {
+        Vector3f::new(0., z.z, -z.y) / (z.y * z.y + z.z * z.z).sqrt()
+    };
+    (x, z.cross(&x))
 }
 pub static INV_PI: Float = 0.31830988618379067154;
 

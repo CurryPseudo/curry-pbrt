@@ -3,10 +3,19 @@ use crate::{
     scene_file_parser::{BasicTypes, ParseFromProperty},
 };
 use derive_more::{Deref, Index, Into};
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use std::{
+    fmt::Display,
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
+};
 
 #[derive(Debug, Clone, Copy, Index, Into, Deref)]
 pub struct RGBSpectrum([Float; 3]);
+
+impl Display for RGBSpectrum {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {} {}", self.0[0], self.0[1], self.0[2])
+    }
+}
 
 impl RGBSpectrum {
     pub fn new(v: Float) -> Self {
@@ -76,14 +85,14 @@ macro_rules! impl_num_op {
         }
         impl $op_trait<Option<Self>> for RGBSpectrum {
             type Output = Self;
-            fn $fn_name(self, _rhs: Option<Self>) -> Self::Output {
-                self.map_move(|x| x $op 0.)
+            fn $fn_name(self, rhs: Option<Self>) -> Self::Output {
+                self.op_move(rhs.unwrap_or(Self::new(0.)), |x, y| x $op y)
             }
         }
         impl $op_trait<&Option<Self>> for RGBSpectrum {
             type Output = Self;
-            fn $fn_name(self, _rhs: &Option<Self>) -> Self::Output {
-                self.map_move(|x| x $op 0.)
+            fn $fn_name(self, rhs: &Option<Self>) -> Self::Output {
+                self.op_move(rhs.unwrap_or(Self::new(0.)), |x, y| x $op y)
             }
         }
     }
@@ -106,13 +115,13 @@ macro_rules! impl_num_op_assign {
             }
         }
         impl $op_trait<Option<Self>> for RGBSpectrum {
-            fn $fn_name(&mut self, _rhs: Option<Self>) {
-                self.map(|x| *x $op 0.)
+            fn $fn_name(&mut self, rhs: Option<Self>) {
+                self.op(rhs.unwrap_or(Self::new(0.)), |x, y| *x $op y)
             }
         }
         impl $op_trait<&Option<Self>> for RGBSpectrum {
-            fn $fn_name(&mut self, _rhs: &Option<Self>) {
-                self.map(|x| *x $op 0.)
+            fn $fn_name(&mut self, rhs: &Option<Self>) {
+                self.op(rhs.unwrap_or(Self::new(0.)), |x, y| *x $op y)
             }
         }
     }

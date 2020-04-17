@@ -13,7 +13,7 @@ pub type Vector3i = nalgebra::VectorN<Integer, U3>;
 
 impl Transformable for Vector3f {
     fn apply(self, transform: &Transform) -> Self {
-        Self::from_homogeneous(transform.m * self.to_homogeneous()).unwrap()
+        (transform.m * self.to_homogeneous()).xyz()
     }
 }
 

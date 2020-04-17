@@ -1,9 +1,9 @@
 Camera "perspective" "float fov" [ 40.0 ]
-Sampler "halton" "integer pixelsamples" [ 16 ]
+Sampler "halton" "integer pixelsamples" [ 1 ]
 Film "image"
 	"string filename" ["image/sphere.png"]
-	"integer xresolution" [ 1200 ]
-	"integer yresolution" [ 1600 ]
+	"integer xresolution" [ 1600 ]
+	"integer yresolution" [ 1200 ]
 
 Integrator "directlighting" 
 	"integer maxdepth" [ 0 ]
@@ -12,15 +12,15 @@ WorldBegin
 
 Material "matte" "rgb Kd" [ 0.5 0.4 0.3 ]
 
-AttributeBegin
-	Translate -1. 1. 3.
-	LightSource "point" "rgb I" [ 1. 1. 1. ]
-AttributeEnd
-
 # AttributeBegin
-# 	Translate 0. 0. 0.
-# 	Shape "sphere" "float radius" [ 7 ]
+# 	Translate -1. 1. 3.
+# 	LightSource "point" "rgb I" [ 1. 1. 1. ]
 # AttributeEnd
+
+AttributeBegin
+	Translate 0. 0. 0.
+	Shape "sphere" "float radius" [ 7 ]
+AttributeEnd
 
 Material "matte" "rgb Kd" [ 0.3 0.4 0.5 ]
 
@@ -30,21 +30,23 @@ AttributeBegin
 AttributeEnd
 
 AttributeBegin
-	Translate 0.3 0.3 2
+	Translate 0.5 0.5 2
 	Shape "sphere" "float radius" [ 0.2 ]
 AttributeEnd
 
 AttributeBegin
-	Translate 2 2. 3.5
-	LightSource "point" "rgb I" [ 1. 1. 1. ]
+	# LightSource "point" 
+	AreaLightSource "diffuse" "rgb L" [ 6. 6. 6. ]
+	Translate 0.8 0.8 1
+	Shape "sphere" "float radius" [0.2]
 AttributeEnd
 
-AttributeBegin
-	Translate 0.6 2. 3.
-	LightSource "distant" 
-		"rgb L" [ 0.1 0.1 0.1 ] 
-		"point from" [0 0 0]
-		"point to" [0 0 1]
-AttributeEnd
+# AttributeBegin
+# 	Translate 0.6 2. 3.
+# 	LightSource "distant" 
+# 		"rgb L" [ 0.1 0.1 0.1 ] 
+# 		"point from" [0 0 0]
+# 		"point to" [0 0 1]
+# AttributeEnd
 
 WorldEnd

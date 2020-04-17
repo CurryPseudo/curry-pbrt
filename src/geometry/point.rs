@@ -1,6 +1,6 @@
 use super::{Transform, Transformable, Vector2f, Vector3f};
 use crate::def::Float;
-use crate::{def::Integer, math::{INV_PI, PI, WithPdf}, scene_file_parser::{BasicTypes, ParseFromProperty}};
+use crate::{def::Integer, math::{INV_PI, PI, max}, scene_file_parser::{BasicTypes, ParseFromProperty}};
 pub type Point<T, N> = nalgebra::Point<T, N>;
 pub type Point2f = nalgebra::Point2<Float>;
 pub type Point2i = nalgebra::Point2<Integer>;
@@ -29,10 +29,16 @@ pub fn concentric_sample_disk(u: Point2f) -> Point2f {
         polar_point(r, theta)
     }
 }
-pub fn cosine_sample_hemisphere(u: Point2f) -> WithPdf<Vector3f> {
+pub fn uniform_sample_hemisphere(u: Point2f) -> Vector3f {
+    let z = 1. - 2. * u.x;
+    let r = max(0., 1. - z * z).sqrt();
+    let phi = 2. * PI * u.y;
+    Vector3f::new(r * phi.cos(), r * phi.sin(), z)
+}
+pub fn cosine_sample_hemisphere(u: Point2f) -> (Vector3f, Float) {
     let d = concentric_sample_disk(u);
     let z = (1. - d.coords.magnitude_squared()).sqrt();
-    WithPdf::new(Vector3f::new(d.x, d.y, z), z * INV_PI)
+    (Vector3f::new(d.x, d.y, z), z * INV_PI)
 }
 impl ParseFromProperty for Point3f {
     fn parse_from_property(_: &str, basic_type: &BasicTypes) -> Self {
