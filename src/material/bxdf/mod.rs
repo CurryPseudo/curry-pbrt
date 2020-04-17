@@ -1,5 +1,5 @@
-mod lambertian_reflection;
-pub use lambertian_reflection::*;
+mod lambertian;
+pub use lambertian::*;
 use crate::{geometry::{cosine_sample_hemisphere, Vector3f, Normal3f}, sampler::Sampler, spectrum::Spectrum, math::INV_PI, def::Float};
 
 pub trait BRDF {

@@ -1,4 +1,4 @@
-use crate::math::{clamp, gamma_correct, max, min, rlerp};
+use crate::math::{clamp, gamma_correct, max, min};
 use crate::{
     def::Float,
     geometry::{Bounds2u, Point2u, Vector2f, Vector2u},
@@ -8,7 +8,7 @@ use crate::{
 use png::HasParameters;
 use png::{BitDepth, ColorType, Encoder};
 use std::{
-    fmt::{Debug, Display},
+    fmt::Debug,
     fs::File,
     io::BufWriter,
     path::Path,
@@ -70,8 +70,8 @@ impl Film {
             f_min = Some(f_min.map_or(*float, |f_min| min(f_min, *float)));
             f_max = Some(f_max.map_or(*float, |f_max| max(f_max, *float)));
         }
-        let f_min = f_min.unwrap();
-        let f_max = f_max.unwrap();
+        let _f_min = f_min.unwrap();
+        let _f_max = f_max.unwrap();
         for float in floats {
             data.push(clamp(
                 gamma_correct(float) * 255. + 0.5,

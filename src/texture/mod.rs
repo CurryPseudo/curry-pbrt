@@ -16,7 +16,7 @@ impl<T> From<T> for Texture<T> {
 }
 
 impl<T: Clone> Texture<T> {
-    pub fn evaluate(&self, uv: &Point2f) -> T {
+    pub fn evaluate(&self, _uv: &Point2f) -> T {
         self.t.clone()
     }
 }

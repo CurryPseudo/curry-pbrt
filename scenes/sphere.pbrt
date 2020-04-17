@@ -3,7 +3,7 @@ Film "image"
 	"integer xresolution" [ 1600 ]
 	"integer yresolution" [ 1200 ]
 
-Sampler "halton" "integer pixelsamples" [ 64 ]
+Sampler "halton" "integer pixelsamples" [ 1 ]
 
 Translate 0 0 -5
 

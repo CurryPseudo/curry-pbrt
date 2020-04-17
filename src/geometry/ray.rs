@@ -44,8 +44,3 @@ impl Transformable for Ray {
         self
     }
 }
-pub struct RayDiffrential {
-    r: Ray,
-    rx: Ray,
-    ry: Ray,
-}

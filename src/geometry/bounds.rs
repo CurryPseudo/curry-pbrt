@@ -1,4 +1,4 @@
-use super::{Point, Point2i, Point2u, Ray, Transform, Transformable, Vector, Vector3f};
+use super::{Point, Point2u, Ray, Transform, Transformable, Vector, Vector3f};
 use crate::def::Float;
 use crate::def::Integer;
 use crate::math::lerp;
@@ -323,9 +323,7 @@ impl RayIntersectCache {
 
 impl From<Ray> for RayIntersectCache {
     fn from(ray: Ray) -> Self {
-        let o = ray.o;
         let d = ray.d;
-        let t_max = ray.t_max;
         let inverse_d = Vector3f::new(1. / d.x, 1. / d.y, 1. / d.z);
         let is_positive_d = Vector3::new(is_positive(d.x), is_positive(d.y), is_positive(d.z));
         let is_negative_d = Vector3::from_element(1) - is_positive_d;

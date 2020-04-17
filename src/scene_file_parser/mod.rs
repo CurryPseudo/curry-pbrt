@@ -182,8 +182,8 @@ impl Index<usize> for PropertySet {
         match &self.0[index] {
             Property::Value(r) => r,
             Property::TypedValue {
-                type_name,
-                name,
+                type_name: _,
+                name: _,
                 values,
             } => values,
         }

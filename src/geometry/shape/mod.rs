@@ -6,7 +6,6 @@ mod sphere;
 mod transform;
 use downcast_rs::DowncastSync;
 pub use sphere::*;
-use std::sync::Arc;
 pub use transform::*;
 
 pub trait Shape: DowncastSync {
