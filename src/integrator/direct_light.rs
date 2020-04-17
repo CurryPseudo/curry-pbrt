@@ -23,7 +23,9 @@ impl Integrator for DirectLightIntegrator {
                     {
                         // sample light
                         if let (wi, Some(li), li_pdf) = light.sample_li(&point, sampler, scene) {
-                            if let (Some(f), f_pdf) = brdf.f_pdf(&wo, &wi, n) {
+                            info!("Get li {} pdf {}", li, li_pdf);
+                            if let (Some(f), f_pdf) = brdf.f_pdf(&wo, &wi) {
+                                info!("Get f {} {}", f, f_pdf);
                                 if light.is_delta() {
                                     l += li * f * n.dot(&wi).abs() / li_pdf;
                                 } else {

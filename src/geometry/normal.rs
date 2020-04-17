@@ -10,6 +10,11 @@ impl From<Vector3f> for Normal3f {
         Self(v)
     }
 }
+impl Into<Vector3f> for Normal3f {
+    fn into(self) -> Vector3f {
+        self.0
+    }
+}
 
 impl Deref for Normal3f {
     type Target = Vector3f;

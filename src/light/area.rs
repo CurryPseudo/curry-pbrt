@@ -61,7 +61,7 @@ impl Light for AreaLight {
         }
     }
     fn le(&self, _: &ShapePoint) -> Spectrum {
-        self.le / self.shape.area()
+        self.le
     }
     fn le_out_scene(&self, _: &Ray) -> Float {
         0.

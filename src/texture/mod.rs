@@ -17,17 +17,12 @@ impl<T: Clone> Texture<T> {
     }
 }
 
-impl ParseFromProperty for Texture<Spectrum> {
+impl<T: ParseFromProperty> ParseFromProperty for Texture<T> {
     fn parse_from_property(property_type: &str, basic_type: &BasicTypes) -> Self {
-        match property_type {
-            "rgb" => {
-                Texture::from(Spectrum::parse_from_property(property_type, basic_type))
-            }
-            _ => panic!()
-        }
+        Texture::from(T::parse_from_property(property_type, basic_type))
     }
     fn parse_default() -> Self {
-        Texture::from(Spectrum::parse_default())
+        Texture::from(T::parse_default())
     }
 }
 

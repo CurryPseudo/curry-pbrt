@@ -56,15 +56,12 @@ pub fn parse_light(property_set: &PropertySet) -> Box<dyn Light> {
         }
         "distant" => {
             let i = property_set.get_default("L");
-            let from = property_set
-                .get_value("from")
-                .unwrap_or(Point3f::new(0., 0., 0.));
             let w = property_set
                 .get_value::<Point3f>("from")
                 .map_or(Vector3f::new(0., 0., -1.), |from| {
                     property_set.get_value::<Point3f>("to").unwrap() - from
                 });
-            Box::new(DistantLight::new(from, w, i))
+            Box::new(DistantLight::new(w, i))
         }
         _ => panic!(),
     }

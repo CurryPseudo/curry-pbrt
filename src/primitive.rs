@@ -73,7 +73,7 @@ impl PrimitiveIntersect {
     pub fn le(&self) -> Option<Spectrum> {
         Some(self.primitive.source.get_light()?.le(self.shape_intersect.get_shape_point()))
     }
-    pub fn compute_scattering_functions(&self) -> Option<Box<dyn BRDF>> {
+    pub fn compute_scattering_functions(&self) -> Option<Box<dyn BxDF>> {
         Some(
             self.primitive.source
                 .get_material()?

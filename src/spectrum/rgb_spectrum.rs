@@ -14,10 +14,33 @@ impl Display for RGBSpectrum {
     }
 }
 
+impl Default for RGBSpectrum {
+    fn default() -> Self {
+        Self::new(0.)
+    }
+}
+
+impl From<Option<RGBSpectrum>> for RGBSpectrum {
+    fn from(s: Option<RGBSpectrum>) -> Self {
+        s.unwrap_or(Self::default())
+    }
+}
+
 impl RGBSpectrum {
     pub fn new(v: Float) -> Self {
         Self([v; 3])
     }
+    pub fn is_black(&self) -> bool {
+        self.0[0] == 0. && self.0[1] == 0. && self.0[2] == 0.
+    }
+    pub fn to_option(self) -> Option<Self> {
+        if self.is_black() {
+            None
+        } else {
+            Some(self)
+        }
+    }
+
     pub fn map_move<F: Fn(Float) -> Float>(self, f: F) -> Self {
         Self([f(self.0[0]), f(self.0[1]), f(self.0[2])])
     }

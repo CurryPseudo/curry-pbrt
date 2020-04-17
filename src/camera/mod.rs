@@ -40,12 +40,12 @@ impl From<Box<dyn Camera>> for TransformCamera {
 }
 impl Transformable for TransformCamera {
     fn apply(self, transform: &Transform) -> Self {
-        Self::new(self.camera, self.transform.apply(transform))
+        Self::new(self.camera, self.transform.apply(&transform.clone().inverse()))
     }
 }
 impl TransformCamera {
     pub fn new(camera: Box<dyn Camera>, transform: Transform) -> Self {
-        Self { camera, transform }
+        Self { camera, transform: transform.inverse() }
     }
 }
 

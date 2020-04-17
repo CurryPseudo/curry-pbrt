@@ -1,4 +1,4 @@
-use super::BRDF;
+use super::BxDF;
 use crate::*;
 
 pub struct Lambertian {
@@ -10,8 +10,8 @@ impl Lambertian {
 }
 
 
-impl BRDF for Lambertian {
-    fn brdf_f(&self, _: &Vector3f, _: &Vector3f) -> Option<Spectrum> {
-        Some(self.r.clone() / INV_PI)
+impl BxDF for Lambertian {
+    fn f(&self, _: &Vector3f, _: &Vector3f) -> Option<Spectrum> {
+        Some(self.r.clone() * INV_PI)
     }
 }

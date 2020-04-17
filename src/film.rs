@@ -1,12 +1,7 @@
 use crate::*;
 use png::HasParameters;
 use png::{BitDepth, ColorType, Encoder};
-use std::{
-    fmt::Debug,
-    fs::File,
-    io::BufWriter,
-    path::Path,
-};
+use std::{fmt::Debug, fs::File, io::BufWriter, path::Path};
 
 pub trait Renderable {
     fn bound(&self) -> &Bounds2u;
@@ -69,7 +64,7 @@ impl Film {
         for float in floats {
             data.push(clamp(
                 gamma_correct(float) * 255. + 0.5,
-                //                gamma_correct(rlerp(float, 0., f_max)) * 255. + 0.5,
+                //gamma_correct(rlerp(float, 0., _f_max)) * 255. + 0.5,
                 0.,
                 255.,
             ) as u8);

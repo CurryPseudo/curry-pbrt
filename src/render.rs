@@ -28,6 +28,9 @@ pub fn render(
                 film_point_f += offset;
                 let ray = camera.generate_ray(film_point_f);
                 let li = integrator.li(&ray, &scene, sampler.as_mut());
+                if film_point == Point2u::new(0, 0) {
+                    trace!("(0, 0) li is {}", li);
+                }
                 samples.push((offset, li));
                 sampler.next_sample();
             }
