@@ -1,8 +1,5 @@
 use super::{Point, Point2u, Ray, Transform, Transformable, Vector, Vector3f};
-use crate::def::Float;
-use crate::def::Integer;
-use crate::math::lerp;
-use crate::math::{max, min};
+use crate::*;
 use alga::general::{ClosedAdd, ClosedDiv, ClosedMul, ClosedSub};
 use nalgebra::{
     allocator::Allocator,

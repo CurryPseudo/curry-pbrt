@@ -1,5 +1,5 @@
 use super::BRDF;
-use crate::{geometry::Vector3f, spectrum::Spectrum, math::INV_PI};
+use crate::*;
 
 pub struct Lambertian {
     r: Spectrum,

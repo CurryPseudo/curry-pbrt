@@ -1,10 +1,5 @@
 use super::Camera;
-use crate::{
-    def::Float,
-    geometry::{
-        Bounds2f, Point2f, Point3f, Ray, Transform, Transformable, Vector2f, Vector2u, Vector3f,
-    },
-};
+use crate::*;
 
 #[derive(Clone)]
 pub struct PerspectiveCamera {

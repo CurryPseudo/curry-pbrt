@@ -1,7 +1,5 @@
 use super::{Transform, Transformable};
-use crate::def::Float;
-use crate::geometry::point::Point3f;
-use crate::geometry::vector::Vector3f;
+use crate::*;
 use num_traits::Bounded;
 use std::fmt::Display;
 

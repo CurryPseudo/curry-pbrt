@@ -1,8 +1,5 @@
 use super::Sampler;
-use crate::{
-    def::Float,
-    geometry::{Point2u, Vector2u},
-};
+use crate::*;
 use rand::{seq::SliceRandom, thread_rng};
 
 fn multiplicative_inverse(a: usize, n: usize) -> usize {

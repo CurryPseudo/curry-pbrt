@@ -1,8 +1,4 @@
-use crate::{
-    geometry::Point2f,
-    scene_file_parser::{BasicTypes, ParseFromProperty},
-    spectrum::Spectrum,
-};
+use crate::*;
 
 #[derive(Debug, Clone)]
 pub struct Texture<T> {

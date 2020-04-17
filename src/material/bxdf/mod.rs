@@ -1,6 +1,8 @@
 mod lambertian;
+mod oren_nayar;
 pub use lambertian::*;
-use crate::{geometry::{cosine_sample_hemisphere, Vector3f, Normal3f}, sampler::Sampler, spectrum::Spectrum, math::INV_PI, def::Float};
+pub use oren_nayar::*;
+use crate::*;
 
 pub trait BRDF {
     fn brdf_f(&self, wo: &Vector3f, wi: &Vector3f) -> Option<Spectrum>;

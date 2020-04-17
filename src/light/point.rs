@@ -1,8 +1,5 @@
 use super::DeltaLight;
-use crate::{
-    geometry::{Point3f, Ray, Transform, Transformable, Vector3f},
-    spectrum::Spectrum,
-};
+use crate::*;
 
 #[derive(Clone)]
 pub struct PointLight {

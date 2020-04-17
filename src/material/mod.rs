@@ -1,8 +1,4 @@
-use crate::{
-    geometry::ShapeIntersect,
-    scene_file_parser::PropertySet
-};
-
+use crate::*;
 mod bxdf;
 
 mod matte;

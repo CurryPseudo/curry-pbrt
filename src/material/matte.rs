@@ -1,5 +1,5 @@
 use super::{bxdf::BRDF, Material};
-use crate::{geometry::ShapeIntersect, spectrum::Spectrum, texture::Texture};
+use crate::*;
 
 #[derive(Debug, Clone)]
 pub struct MatteMaterial {

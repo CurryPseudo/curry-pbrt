@@ -1,10 +1,4 @@
-use crate::math::{clamp, gamma_correct, max, min};
-use crate::{
-    def::Float,
-    geometry::{Bounds2u, Point2u, Vector2f, Vector2u},
-    scene_file_parser::{BlockSegment, ParseFromBlockSegment},
-    spectrum::Spectrum,
-};
+use crate::*;
 use png::HasParameters;
 use png::{BitDepth, ColorType, Encoder};
 use std::{

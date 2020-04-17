@@ -1,6 +1,4 @@
-use super::Vector3f;
-use crate::def::Float;
-use crate::scene_file_parser::{BlockSegment, ParseFromBlockSegment};
+use crate::*;
 use nalgebra::Matrix4;
 use std::fmt::Display;
 

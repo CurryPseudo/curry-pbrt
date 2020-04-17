@@ -1,6 +1,6 @@
 pub mod lex;
 
-use crate::def::{Float, Integer};
+use crate::*;
 use lex::{parse_lex, Token, TokenWithPos};
 use std::collections::VecDeque;
 use std::{ops::Index, path::Path};

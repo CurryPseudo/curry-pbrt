@@ -1,7 +1,4 @@
-use super::{
-    Bounds3f, Normal3f, Point2f, Point3f, Ray, RayIntersectCache, Transform, Transformable,
-};
-use crate::{def::Float, sampler::Sampler, scene_file_parser::PropertySet};
+use crate::*;
 mod sphere;
 mod transform;
 use downcast_rs::DowncastSync;

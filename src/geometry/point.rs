@@ -1,6 +1,5 @@
 use super::{Transform, Transformable, Vector2f, Vector3f};
-use crate::def::Float;
-use crate::{def::Integer, math::{INV_PI, PI, max}, scene_file_parser::{BasicTypes, ParseFromProperty}};
+use crate::*;
 pub type Point<T, N> = nalgebra::Point<T, N>;
 pub type Point2f = nalgebra::Point2<Float>;
 pub type Point2i = nalgebra::Point2<Integer>;

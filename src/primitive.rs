@@ -1,8 +1,4 @@
-use crate::{
-    geometry::{Ray, RayIntersectCache, Shape, ShapeIntersect},
-    light::Light,
-    material::{Material, BRDF}, spectrum::Spectrum,
-};
+use crate::*;
 use std::sync::Arc;
 
 #[derive(Clone)]

@@ -1,14 +1,7 @@
 mod area;
 mod distant;
 mod point;
-use crate::{
-    def::Float,
-    geometry::{Point3f, Ray, Transform, Transformable, Vector3f, Shape, ShapePoint},
-    sampler::Sampler,
-    scene::Scene,
-    scene_file_parser::PropertySet,
-    spectrum::Spectrum,
-};
+use crate::*;
 
 pub use area::*;
 pub use distant::*;

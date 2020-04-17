@@ -1,6 +1,5 @@
 mod perspective;
-use crate::geometry::{Point2f, Ray, Transform, Transformable, Vector2u};
-use crate::scene_file_parser::{BlockSegment, ParseFromBlockSegment};
+use crate::*;
 use downcast_rs::DowncastSync;
 pub use perspective::*;
 

@@ -1,8 +1,5 @@
 use super::{Transform, Transformable};
-use crate::{
-    def::{Float, Integer},
-    scene_file_parser::{BasicTypes, ParseFromProperty},
-};
+use crate::*;
 use nalgebra::base::dimension::{U2, U3};
 pub type Vector<T, D> = nalgebra::VectorN<T, D>;
 pub type Vector2f = nalgebra::VectorN<Float, U2>;

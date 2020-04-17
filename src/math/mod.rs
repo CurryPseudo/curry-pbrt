@@ -1,4 +1,4 @@
-use crate::{geometry::Vector3f, def::Float};
+use crate::*;
 use alga::general::{ClosedAdd, ClosedDiv, ClosedMul, ClosedSub};
 use num_traits::FromPrimitive;
 

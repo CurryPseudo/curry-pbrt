@@ -1,8 +1,5 @@
 use super::Integrator;
-use crate::{
-    def::Float, geometry::Ray, math::power_heuristic, sampler::Sampler, scene::Scene,
-    spectrum::Spectrum,
-};
+use crate::*;
 
 pub struct DirectLightIntegrator {}
 

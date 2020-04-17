@@ -1,11 +1,5 @@
 use super::Light;
-use crate::{
-    def::Float,
-    geometry::{Point3f, Ray, Shape, ShapePoint, Transform, Vector3f},
-    sampler::Sampler,
-    scene::Scene,
-    spectrum::Spectrum,
-};
+use crate::*;
 use std::sync::Arc;
 
 pub struct AreaLight {

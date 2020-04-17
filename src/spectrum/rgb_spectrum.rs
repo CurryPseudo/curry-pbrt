@@ -1,7 +1,4 @@
-use crate::{
-    def::Float,
-    scene_file_parser::{BasicTypes, ParseFromProperty},
-};
+use crate::*;
 use derive_more::{Deref, Index, Into};
 use std::{
     fmt::Display,

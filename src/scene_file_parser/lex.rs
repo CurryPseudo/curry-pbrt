@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
-use crate::def::{Float, Integer};
+use crate::*;
 #[derive(Debug)]
 pub struct TokenWithPos {
     pub token: Token,
