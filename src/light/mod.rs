@@ -14,8 +14,8 @@ pub trait Light: Sync + Send {
         point: &ShapePoint,
         sampler: &mut dyn Sampler,
     ) -> (Vector3f, Option<Spectrum>, Float, VisibilityTester);
-    fn le_out_scene(&self, _: &Ray) -> Float {
-        0.
+    fn le_out_scene(&self, _: &Ray) -> Option<Spectrum> {
+        None
     }
     fn pdf(&self, point: &Point3f, shape_point: &ShapePoint) -> Float;
     fn box_apply(&self, transform: &Transform) -> Box<dyn Light>;

@@ -20,9 +20,6 @@ impl Light for AreaLight {
     fn le(&self, _: &ShapePoint) -> Option<Spectrum> {
         Some(self.le)
     }
-    fn le_out_scene(&self, _: &Ray) -> Float {
-        0.
-    }
     fn is_delta(&self) -> bool {
         false
    }

@@ -23,7 +23,9 @@ pub fn parse_material(property_set: &PropertySet) -> Box<dyn Material> {
         }
         "glass" => {
             let r = property_set.get_value("Kr").unwrap_or(Texture::from(Spectrum::new(1.)));
-            Box::new(GlassMaterial::new(r))
+            let t = property_set.get_value("Kt").unwrap_or(Texture::from(Spectrum::new(1.)));
+            let eta = property_set.get_value("index").unwrap_or(Texture::from(1.5));
+            Box::new(GlassMaterial::new(r, t, eta))
         }
         _ => {
             panic!()

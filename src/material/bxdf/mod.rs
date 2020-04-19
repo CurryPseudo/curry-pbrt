@@ -6,7 +6,7 @@ pub use lambertian::*;
 pub use oren_nayar::*;
 pub use specular::*;
 use std::{
-    ops::{Add, AddAssign, Div, DivAssign},
+    ops::{AddAssign, DivAssign},
     sync::Arc,
 };
 
@@ -129,13 +129,11 @@ impl BSDF {
     }
     pub fn add_delta_bxdf<T: DeltaBxDF + BxDF + 'static>(&mut self, delta_bxdf: Arc<T>) {
         self.delta_bxdfs.push(delta_bxdf.clone());
-        self.bxdfs.push(delta_bxdf);
     }
     pub fn sample_delta_wi(&self, wo: &Vector3f) -> Vec<(Vector3f, Spectrum)> {
         let mut r = Vec::new();
         for delta_bxdf in &self.delta_bxdfs {
-            let (wi, s) = delta_bxdf.sample_f(&self.world_to_local(wo));
-            if let Some(s) = s {
+            if let Some((wi, s)) = delta_bxdf.sample_f(&self.world_to_local(wo)) {
                 r.push((self.local_to_world(&wi), s));
             }
         }
@@ -145,22 +143,24 @@ impl BSDF {
 
 impl BxDF for BSDF {
     fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Option<Spectrum> {
-        if wo.dot(&self.n) * wi.dot(&self.n) <= 0. {
-            None
-        } else {
-            let wo = self.world_to_local(wo);
-            let wi = self.world_to_local(wi);
-            let s: Spectrum = self.average(|bxdf| bxdf.f(&wo, &wi).into());
-            s.to_option()
-        }
+        let wo = self.world_to_local(wo);
+        let wi = self.world_to_local(wi);
+        let s: Spectrum = self.average(|bxdf| bxdf.f(&wo, &wi).into());
+        s.to_option()
     }
     fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+        if self.bxdfs.is_empty() {
+            return 0.;
+        }
         let wo = self.world_to_local(wo);
         let wi = self.world_to_local(wi);
         let pdf = self.average(|bxdf| bxdf.pdf(&wo, &wi));
         pdf
     }
     fn f_pdf(&self, wo: &Vector3f, wi: &Vector3f) -> (Option<Spectrum>, Float) {
+        if self.bxdfs.is_empty() {
+            return (None, 0.);
+        }
         let wo = self.world_to_local(wo);
         let wi = self.world_to_local(wi);
         let (f, pdf) = self.average_general(
@@ -182,6 +182,9 @@ impl BxDF for BSDF {
         wo: &Vector3f,
         sampler: &mut dyn Sampler,
     ) -> (Vector3f, Option<Spectrum>, Float) {
+        if self.bxdfs.is_empty() {
+            return (Vector3f::new(0., 0., 0.), None, 0.);
+        }
         let choose_index = sampler.get_usize(self.bxdfs.len());
         let choose_bxdf = &self.bxdfs[choose_index];
         let wo_local = self.world_to_local(wo);
@@ -202,7 +205,7 @@ impl BxDF for BSDF {
 }
 
 pub trait DeltaBxDF {
-    fn sample_f(&self, wo: &Vector3f) -> (Vector3f, Option<Spectrum>);
+    fn sample_f(&self, wo: &Vector3f) -> Option<(Vector3f, Spectrum)>;
 }
 
 impl<T: DeltaBxDF> BxDF for T {
@@ -212,8 +215,11 @@ impl<T: DeltaBxDF> BxDF for T {
         sampler: &mut dyn Sampler,
     ) -> (Vector3f, Option<Spectrum>, Float) {
         sampler.get_2d();
-        let (wi, s) = self.sample_f(wo);
-        (wi, s, 1.)
+        if let Some((wi, s)) = self.sample_f(wo) {
+            (wi, Some(s), 1.)
+        } else {
+            (Vector3f::new(0., 0., 0.), None, 0.)
+        }
     }
     fn pdf(&self, _wo: &Vector3f, _wi: &Vector3f) -> Float {
         0.

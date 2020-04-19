@@ -1,6 +1,6 @@
 LookAt 278 273 -800  278 273 0   0 1 0
 Camera "perspective" "float fov" [37.5]
-Sampler "halton" "integer pixelsamples" [32]
+Sampler "halton" "integer pixelsamples" [1]
 Film "image"
    "string filename" ["image/cornell_test.png"]
    "integer xresolution" [1600]
@@ -188,6 +188,9 @@ AttributeBegin
     240.0 165.0 272.0
      82.0 165.0 225.0
      82.0   0.0 225.0 ]
+	Material "glass"
+	Translate 268 247.5 176.5
+	Shape "sphere" "float radius" [82.5]
 AttributeEnd
 
 
