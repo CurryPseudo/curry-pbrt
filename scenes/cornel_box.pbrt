@@ -6,7 +6,7 @@ Film "image"
    "integer xresolution" [1600]
    "integer yresolution" [900]
 
-Integrator "directlighting" "integer maxdepth" [5] 
+Integrator "directlighting" "integer maxdepth" [20] 
 
 
 WorldBegin
@@ -159,6 +159,7 @@ AttributeEnd
 # material { glass ior 1.5 r { constant spd { 1 0.95 } } }
 
 AttributeBegin
+   Material "glass"
    Shape "trianglemesh"
    "integer indices" [
       3 2 0 2 1 0
@@ -199,7 +200,7 @@ AttributeEnd
 #
 
 AttributeBegin
-   Material "glass" "rgb Kr" [1. 1. 1.]
+   Material "mirror" "rgb Kr" [1. 1. 1.]
    Shape "trianglemesh"
    "integer indices" [
       3 2 0 2 1 0

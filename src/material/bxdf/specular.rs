@@ -13,6 +13,19 @@ impl FresnelDielectric {
     }
 }
 
+pub struct FresnelNoOp {}
+
+impl FresnelNoOp {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl Fresnel for FresnelNoOp {
+    fn evaluate(&self, _cos_i: Float) -> Float {
+        1.
+    }
+}
 impl Fresnel for FresnelDielectric {
     fn evaluate(&self, mut cos_i: Float) -> Float {
         let (eta_i, eta_t) = if cos_i > 0. {

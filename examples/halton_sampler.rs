@@ -1,5 +1,4 @@
 use curry_pbrt::{geometry::Vector2u, sampler::{HaltonSampler, Sampler}};
-use std::sync::Mutex;
 
 fn main() {
     let mut sampler = Box::new(HaltonSampler::new(128, Vector2u::new(1024, 768)));

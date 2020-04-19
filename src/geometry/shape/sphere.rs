@@ -29,7 +29,6 @@ impl Shape for Sphere {
         let a = ray.d.magnitude_squared();
         let b = 2. * ray.d.dot(&ray.o.coords);
         let c = ray.o.coords.magnitude_squared() - self.radius * self.radius;
-        let inside = c < 0.;
         let (t0, t1) = solve_quadratic(a, b, c)?;
         if t0 > ray.t_max || t1 < 0. {
             None
@@ -40,8 +39,7 @@ impl Shape for Sphere {
             }
             let mut p = ray.eval(t);
             p *= self.radius / p.coords.magnitude();
-            let n = p.coords.normalize();
-            let n = if inside { Normal3f(-n) } else { Normal3f(n) };
+            let n = Normal3f::from(p.coords.normalize());
             let p_error = gamma(5) * p.coords.abs();
             Some(ShapeIntersect::new(
                 p,

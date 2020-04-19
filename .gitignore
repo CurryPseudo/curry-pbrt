@@ -1,4 +1,4 @@
-/target
+target
 scenes/landscape
 *.tokens
 *.description
@@ -6,3 +6,4 @@ image
 flame.*
 perf.*
 .err
+test

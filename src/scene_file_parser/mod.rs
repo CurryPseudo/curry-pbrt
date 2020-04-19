@@ -343,7 +343,7 @@ impl<T: ParseConsumeProperty + ParseFromProperty, R: ParseConsumeProperty + Pars
         )
     }
     fn parse_default() -> Self {
-        todo!()
+        (T::parse_default(), R::parse_default())
     }
 }
 

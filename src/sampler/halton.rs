@@ -75,7 +75,7 @@ pub struct HaltonSampler {
     scale: Vector2u,
     exp: Vector2u,
     mult_inverse: Vector2u,
-    dim: usize,
+    dim: usize
 }
 impl HaltonSampler {
     pub fn new(sample_per_pixel: usize, resolution: Vector2u) -> Self {
@@ -124,9 +124,13 @@ impl Sampler for HaltonSampler {
     fn get_sample(&mut self) -> Float {
         let r = if self.dim < 2 {
             radical_inverse(self.index / self.scale[self.dim], self.dim)
-        } else {
+        } else if self.dim < 1000 {
             scrambled_radical_inverse(self.index, self.dim)
-        };
+        }
+        else {
+            rand::random()       
+        }
+        ;
         self.dim += 1;
         r
     }
