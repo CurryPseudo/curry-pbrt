@@ -32,10 +32,10 @@ impl DirectLightIntegrator {
                         if let (wi, Some(li), li_pdf, visibility_tester) =
                             light.sample_li(&shape_point, sampler)
                         {
-                            if visibility_tester.unoccluded(scene) {
-                                trace!("Sample light Get li {} pdf {}", li, li_pdf);
-                                if let (Some(f), f_pdf) = bsdf.f_pdf(&wo, &wi) {
-                                    if f_pdf != 0. {
+                            trace!("Sample light Get li {} pdf {}", li, li_pdf);
+                            if let (Some(f), f_pdf) = bsdf.f_pdf(&wo, &wi) {
+                                if f_pdf != 0. {
+                                    if visibility_tester.unoccluded(scene) {
                                         if light.is_delta() {
                                             l += li * f * n.dot(&wi).abs() / li_pdf;
                                         } else {
