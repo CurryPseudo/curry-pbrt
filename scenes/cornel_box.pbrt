@@ -1,10 +1,10 @@
 LookAt 278 273 -800  278 273 0   0 1 0
 Camera "perspective" "float fov" [37.5]
-Sampler "halton" "integer pixelsamples" [1]
+Sampler "halton" "integer pixelsamples" [128]
 Film "image"
    "string filename" ["image/cornell.png"]
-   "integer xresolution" [1200]
-   "integer yresolution" [1200]
+   "integer xresolution" [1600]
+   "integer yresolution" [900]
 
 Integrator "directlighting" "int maxdepth" [ 1 ]
 

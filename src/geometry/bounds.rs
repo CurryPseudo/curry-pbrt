@@ -283,7 +283,8 @@ impl Bounds3f {
         let mut pair = None;
         for i in 0..3 {
             if let Some((t_min, t_max)) = &mut pair {
-                if let Some((t_next_min, t_next_max)) = self.intersect_component(ray, i) {
+                if let Some((t_next_min, mut t_next_max)) = self.intersect_component(ray, i) {
+                    t_next_max *= 1. + 2. * gamma(3);
                     if *t_min > t_next_max || t_next_min > *t_max {
                         return false;
                     }

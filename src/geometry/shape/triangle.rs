@@ -117,13 +117,11 @@ impl Shape for Triangle {
     }
     fn sample(&self, sampler: &mut dyn Sampler) -> (ShapePoint, Float) {
         let b = uniform_sample_triangle(sampler.get_2d());
-        let (b0, b1, b2) = (b.x, b.y, 1. - b.x - b.y);
-        let p = self.point_interpolate(b0, b1, b2);
         let (p0, p1, p2) = self.vertices();
-        let n = Normal3f::from((p1 - p0).cross(&(p2 - p0)).normalize());
-        let p_error = gamma(6) * {
-            (b0 * p0.coords).abs() + (b1 * p1.coords).abs() + (b2 * p2.coords).abs()
-        };
+        let (b0, b1, b2) = (b.x, b.y, 1. - b.x - b.y);
+        let p = Point3f::from(b0 * p0.coords + b1 * p1.coords + b2 * p2.coords);
+        let n = Normal3f::from((p1 - p0).cross(&(p2 - p0)));
+        let p_error = gamma(6) * self.abs_sum(b0, b1, b2);
         (ShapePoint::new_p_normal_error(p, n, p_error), 1. / self.area())
     }
     fn intersect(&self, ray: &Ray) -> Option<ShapeIntersect> {
@@ -139,6 +137,9 @@ impl Shape for Triangle {
 
         let ky = if kx + 1 == 3 { 0 } else { kx + 1 };
         let d = permute(ray.d, kx, ky, kz);
+        p0t = permute(p0t, kx, ky, kz);
+        p1t = permute(p1t, kx, ky, kz);
+        p2t = permute(p2t, kx, ky, kz);
         let sx = -d.x / d.z;
         let sy = -d.y / d.z;
         let sz = 1. / d.z;
@@ -191,13 +192,7 @@ impl Shape for Triangle {
         if t <= delta_t {
             return None;
         }
-
-        let p_error = gamma(7) * {
-            let x_abs_sum = (b0 * p0.x).abs() + (b1 * p1.x).abs() + (b2 * p2.x).abs();
-            let y_abs_sum = (b0 * p0.y).abs() + (b1 * p1.y).abs() + (b2 * p2.y).abs();
-            let z_abs_sum = (b0 * p0.z).abs() + (b1 * p1.z).abs() + (b2 * p2.z).abs();
-            Vector3f::new(x_abs_sum, y_abs_sum, z_abs_sum)
-        };
+        let p_error = gamma(7) * self.abs_sum(b0, b1, b2);
         let (p, n, uv) = self.shape_point_interpolate(b0, b1, b2);
         Some(ShapeIntersect::new(p, n, t, uv, p_error))
     }

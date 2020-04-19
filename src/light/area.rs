@@ -25,7 +25,7 @@ impl Light for AreaLight {
     }
     fn is_delta(&self) -> bool {
         false
-    }
+   }
     fn pdf(&self, point: &Point3f, shape_point: &ShapePoint) -> Float {
         self.shape.by_point_pdf(point, shape_point)
     }

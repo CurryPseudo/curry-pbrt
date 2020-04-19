@@ -27,7 +27,7 @@ impl Integrator for DirectLightIntegrator {
                         if let (wi, Some(li), li_pdf, visibility_tester) =
                             light.sample_li(&shape_point, sampler)
                         {
-                            if visibility_tester.unoccluded(scene) {
+                            if li_pdf > 0. && visibility_tester.unoccluded(scene) {
                                 trace!("Sample light Get li {} pdf {}", li, li_pdf);
                                 if let (Some(f), f_pdf) = bsdf.f_pdf(&wo, &wi) {
                                     trace!("Sample light Get f {} {}", f, f_pdf);
@@ -48,14 +48,14 @@ impl Integrator for DirectLightIntegrator {
                         // sample brdf
                         if let (wi, Some(f), f_pdf) = bsdf.sample_f(&wo, sampler) {
                             trace!("Sample bsdf Get f {} pdf {}", f, f_pdf);
-                            let ray = Ray::new_od(point.clone(), wi.clone());
-
+                            let ray = Ray::new_shape_point_d(&shape_point, wi.clone());
                             if let Some(intersect) = scene.intersect(&ray) {
                                 if let Some(intersect_light) = intersect.get_light() {
                                     if Arc::ptr_eq(light, &intersect_light) {
-                                        if let (Some(li), li_pdf) =
-                                            light.le_pdf(&point, shape_point)
-                                        {
+                                        if let (Some(li), li_pdf) = light.le_pdf(
+                                            &point,
+                                            intersect.get_shape_intersect().get_shape_point(),
+                                        ) {
                                             trace!("Sample bsdf Get li {} pdf {}", li, f_pdf);
                                             l += li
                                                 * f

@@ -24,10 +24,14 @@ impl Ray {
             t_max: Float::max_value(),
         }
     }
+    pub fn new_shape_point_d(o: &ShapePoint, d: Vector3f) -> Self {
+        Self::new_od(o.point_offset_by_error(&d), d)
+    }
     pub fn from_to(from: Point3f, to: Point3f) -> Self {
         let o = from;
         let d = to - from;
-        let t_max = 0.999999999;
+        let a_bit = 0.00001;
+        let t_max = 1. - a_bit;
         Self {
             o,
             d,
