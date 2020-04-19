@@ -117,12 +117,10 @@ impl Shape for Triangle {
     }
     fn sample(&self, sampler: &mut dyn Sampler) -> (ShapePoint, Float) {
         let b = uniform_sample_triangle(sampler.get_2d());
-        let (p0, p1, p2) = self.vertices();
         let (b0, b1, b2) = (b.x, b.y, 1. - b.x - b.y);
-        let p = Point3f::from(b0 * p0.coords + b1 * p1.coords + b2 * p2.coords);
-        let n = Normal3f::from((p1 - p0).cross(&(p2 - p0)));
+        let (p, n, uv) = self.shape_point_interpolate(b0, b1, b2);
         let p_error = gamma(6) * self.abs_sum(b0, b1, b2);
-        (ShapePoint::new_p_normal_error(p, n, p_error), 1. / self.area())
+        (ShapePoint::new(p, n, uv, p_error), 1. / self.area())
     }
     fn intersect(&self, ray: &Ray) -> Option<ShapeIntersect> {
         let (p0, p1, p2) = self.vertices();
