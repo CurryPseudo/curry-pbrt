@@ -24,14 +24,21 @@ impl Ray {
             t_max: Float::max_value(),
         }
     }
+    pub fn from_to(from: Point3f, to: Point3f) -> Self {
+        let o = from;
+        let d = to - from;
+        let t_max = 0.999999999;
+        Self {
+            o,
+            d,
+            t_max,
+        }
+    }
     pub fn new(o: Point3f, d: Vector3f, t_max: Float) -> Self {
         Self { o, d, t_max }
     }
     pub fn eval(&self, t: Float) -> Point3f {
         &self.o + &self.d * t
-    }
-    pub fn move_a_bit(&mut self) {
-        self.o = self.o + self.d.normalize() * 0.0001;
     }
 }
 

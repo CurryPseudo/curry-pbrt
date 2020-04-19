@@ -71,19 +71,20 @@ impl Scene {
                 self.materials.push(m);
             }
             "Shape" => {
-                let mut shape = parse_shape(property_set);
-                if let Some(transform) = &transform {
-                    shape = shape_apply(shape, transform);
+                for mut shape in parse_shape(property_set) {
+                    if let Some(transform) = &transform {
+                        shape = shape_apply(shape, transform);
+                    }
+                    let shape: Arc<dyn Shape> = shape.into();
+                    let primitive = if let Some(area_light_factory) = area_light_factory {
+                        let area_light: Arc<dyn Light> = area_light_factory(shape.clone()).into();
+                        self.lights.push(area_light.clone());
+                        Primitive::new(shape, PrimitiveSource::light(area_light))
+                    } else {
+                        Primitive::new(shape, PrimitiveSource::material(material.clone().unwrap()))
+                    };
+                    self.primitives.push(primitive);
                 }
-                let shape: Arc<dyn Shape> = shape.into();
-                let primitive = if let Some(area_light_factory) = area_light_factory {
-                    let area_light: Arc<dyn Light> = area_light_factory(shape.clone()).into();
-                    self.lights.push(area_light.clone());
-                    Primitive::new(shape, PrimitiveSource::light(area_light))
-                } else {
-                    Primitive::new(shape, PrimitiveSource::material(material.clone().unwrap()))
-                };
-                self.primitives.push(primitive);
             }
             "LightSource" => {
                 let mut light = parse_light(property_set);

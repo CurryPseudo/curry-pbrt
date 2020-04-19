@@ -32,7 +32,7 @@ pub struct Film {
 impl Film {
     pub fn new(resolution: Vector2u) -> Self {
         let pixels = vec![Spectrum::new(0.); resolution.x * resolution.y];
-        let bound = Bounds2u::new(Point2u::new(0, 0), Point2u::from(resolution));
+        let bound = Bounds2u::new(&Point2u::new(0, 0), &Point2u::from(resolution));
         Self {
             resolution,
             pixels,
@@ -74,8 +74,8 @@ impl Film {
     pub fn gen_tiles(&self) -> Vec<FilmTile> {
         let tile_size = 16;
         let tile_indices = Bounds2u::new(
-            Point2u::new(0, 0),
-            Point2u::new(
+            &Point2u::new(0, 0),
+            &Point2u::new(
                 (self.resolution.x - 1) / tile_size + 1,
                 (self.resolution.y - 1) / tile_size + 1,
             ),
@@ -84,7 +84,7 @@ impl Film {
         let mut r = Vec::new();
         for tile_index in tile_indices.index_inside() {
             let next = Point2u::new(tile_index.x + 1, tile_index.y + 1);
-            let bound = Bounds2u::new(tile_index * tile_size, next * tile_size) & &self_bound;
+            let bound = Bounds2u::new(&(tile_index * tile_size), &(next * tile_size)) & &self_bound;
             r.push(FilmTile::new(
                 bound,
                 tile_indices.point_to_offset(&tile_index) * tile_size * tile_size,

@@ -26,13 +26,14 @@ impl Transformable for PointLight {
 }
 
 impl DeltaLight for PointLight {
-    fn sample_li(&self, point: &Point3f) -> (Vector3f, Option<Spectrum>) {
-        let wi = self.point - point;
-        let i = self.i / wi.magnitude_squared();
-        (wi.normalize(), Some(i))
-    }
     fn visibility_test_ray(&self, point: &Point3f, wi: &Vector3f) -> Ray {
         let t = (self.point - point).magnitude();
         Ray::new(*point, *wi, t)
+    }
+    fn sample_li(&self, point: &ShapePoint) -> (Vector3f, Option<Spectrum>, VisibilityTester) {
+        let wi = self.point - point.p;
+        let i = self.i / wi.magnitude_squared();
+        let to = ShapePoint::new_p_normal(self.point, Normal3f::from(-wi));
+        (wi.normalize(), Some(i), VisibilityTester::new(point, &to))
     }
 }

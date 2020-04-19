@@ -62,6 +62,11 @@ pub fn coordinate_system(z: &Vector3f) -> (Vector3f, Vector3f) {
     };
     (x, z.cross(&x))
 }
-pub static INV_PI: Float = 0.31830988618379067154;
 
-pub static PI: Float = 3.14159265358979323846;
+pub fn gamma(n: Integer) -> Float {
+    let n_machine_epsilon = n as Float * MACHINE_EPSILON;
+    n_machine_epsilon / (1. - n_machine_epsilon)
+}
+pub const INV_PI: Float = 0.31830988618379067154;
+
+pub const PI: Float = 3.14159265358979323846;

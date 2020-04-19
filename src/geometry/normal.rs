@@ -5,9 +5,15 @@ use std::{fmt::Display, ops::Deref};
 #[derive(Debug, Clone, Copy)]
 pub struct Normal3f(pub Vector3f);
 
+impl Normal3f {
+    pub fn as_vector(&self) -> &Vector3f {
+        &self.0
+    }
+}
+
 impl From<Vector3f> for Normal3f {
     fn from(v: Vector3f) -> Self {
-        Self(v)
+        Self(v.normalize())
     }
 }
 impl Into<Vector3f> for Normal3f {

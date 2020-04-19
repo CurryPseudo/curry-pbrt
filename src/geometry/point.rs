@@ -45,6 +45,18 @@ impl ParseFromProperty for Point3f {
         Point3f::new(floats[0], floats[1], floats[2])
     }
     fn parse_default() -> Self {
-        Point3f::new(0.,0.,0.)
+        Point3f::new(0., 0., 0.)
     }
 }
+
+impl ParseConsumeProperty for Point3f {
+    fn consume_size() -> usize {
+        3
+    }
+}
+
+pub fn uniform_sample_triangle(u: Point2f) -> Point2f {
+    let su0 = u.x.sqrt();
+    Point2f::new(1. - su0, u.y * su0)
+}
+

@@ -14,19 +14,17 @@ pub enum PrimitiveSource {
 }
 
 impl PrimitiveSource {
-    pub fn get_material(& self) -> Option<Arc<dyn Material>> {
+    pub fn get_material(&self) -> Option<Arc<dyn Material>> {
         if let Self::Material(m) = self {
             Some(m.clone())
-        }
-        else {
+        } else {
             None
         }
     }
     pub fn get_light(&self) -> Option<Arc<dyn Light>> {
         if let Self::Light(l) = self {
             Some(l.clone())
-        }
-        else {
+        } else {
             None
         }
     }
@@ -71,11 +69,15 @@ impl PrimitiveIntersect {
         }
     }
     pub fn le(&self) -> Option<Spectrum> {
-        Some(self.primitive.source.get_light()?.le(self.shape_intersect.get_shape_point()))
+        self.primitive
+            .source
+            .get_light()?
+            .le(self.shape_intersect.get_shape_point())
     }
     pub fn compute_scattering_functions(&self) -> Option<Box<dyn BxDF>> {
         Some(
-            self.primitive.source
+            self.primitive
+                .source
                 .get_material()?
                 .compute_scattering_functions(&self.shape_intersect),
         )
@@ -85,5 +87,8 @@ impl PrimitiveIntersect {
     }
     pub fn get_shape(&self) -> &Arc<dyn Shape> {
         &self.primitive.shape
+    }
+    pub fn get_light(&self) -> Option<Arc<dyn Light>> {
+        self.primitive.source.get_light()
     }
 }

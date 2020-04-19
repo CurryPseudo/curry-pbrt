@@ -23,3 +23,11 @@ impl ParseFromProperty for Vector3f {
         Vector3f::new(0.,0.,0.)
     }
 }
+
+impl ParseConsumeProperty for Vector3f {
+    fn consume_size() -> usize {
+        3
+    }
+}
+
+

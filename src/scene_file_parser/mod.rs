@@ -141,11 +141,11 @@ pub trait ParseFromBlockSegment {
     type T;
     fn parse_from_segment(segment: &BlockSegment) -> Option<Self::T>;
 }
-#[derive(Debug)]
-pub struct PropertySet(Vec<Property>);
+#[derive(Debug, Clone)]
+pub struct PropertySet(VecDeque<Property>);
 impl From<Vec<Property>> for PropertySet {
     fn from(xs: Vec<Property>) -> Self {
-        Self(xs)
+        Self(xs.into_iter().collect())
     }
 }
 
@@ -172,25 +172,35 @@ impl PropertySet {
         }
         None
     }
+    pub fn get_no_type_value<T: ParseFromProperty + ParseConsumeProperty>(&mut self) -> Option<T> {
+        Some(T::parse_from_property(
+            "",
+            &self.as_one_basic_types(T::consume_size())?,
+        ))
+    }
     pub fn get_default<T: ParseFromProperty>(&self, name: &str) -> T {
         self.get_value(name).unwrap_or(T::parse_default())
+    }
+    pub fn as_one_basic_types(&mut self, size: usize) -> Option<BasicTypes> {
+        let mut basic_type_vec = Vec::new();
+        for _ in 0..size {
+            let basic_type = self.0.pop_front()?.into_basic_types();
+            if basic_type.0.len() != 1 {
+                return None;
+            }
+            basic_type_vec.push(basic_type.0[0].clone());
+        }
+        Some(BasicTypes(basic_type_vec.into()))
     }
 }
 impl Index<usize> for PropertySet {
     type Output = BasicTypes;
     fn index(&self, index: usize) -> &Self::Output {
-        match &self.0[index] {
-            Property::Value(r) => r,
-            Property::TypedValue {
-                type_name: _,
-                name: _,
-                values,
-            } => values,
-        }
+        self.0[index].basic_types()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Property {
     Value(BasicTypes),
     TypedValue {
@@ -200,32 +210,49 @@ pub enum Property {
     },
 }
 impl Property {
+    fn basic_types(&self) -> &BasicTypes {
+        match self {
+            Property::Value(r) => r,
+            Property::TypedValue {
+                type_name: _,
+                name: _,
+                values,
+            } => values,
+        }
+    }
+    fn into_basic_types(self) -> BasicTypes {
+        match self {
+            Property::Value(r) => r,
+            Property::TypedValue {
+                type_name: _,
+                name: _,
+                values,
+            } => values,
+        }
+    }
     fn from_lex(tokens: &mut VecDeque<TokenWithPos>) -> Self {
         let token = tokens.front().unwrap();
         match &token.token {
             Token::String(s) => {
                 let words = s.split_whitespace().collect::<Vec<_>>();
                 if words.len() == 2 {
-                    match words[0] {
-                        "point" | "string" | "float" | "integer" | "rgb" | "texture" => {
-                            // TypedValue
-                            let words = s.split_whitespace().collect::<Vec<_>>();
-                            let type_name = String::from(words[0]);
-                            let name = String::from(words[1]);
-                            tokens.pop_front();
-                            let values = BasicTypes::from_lex(tokens);
-                            return Self::TypedValue {
-                                type_name,
-                                name,
-                                values,
-                            };
-                        }
-                        _ => {}
+                    if let Token::Array(_) = tokens[1].token {
+                        // TypedValue
+                        let words = s.split_whitespace().collect::<Vec<_>>();
+                        let type_name = String::from(words[0]);
+                        let name = String::from(words[1]);
+                        tokens.pop_front();
+                        let values = BasicTypes::from_lex(tokens);
+                        return Self::TypedValue {
+                            type_name,
+                            name,
+                            values,
+                        };
                     }
                 }
                 // SingleString
                 if let Token::String(s) = tokens.pop_front().unwrap().token {
-                    Self::Value(BasicTypes(vec![BasicType::BasicString(s)]))
+                    Self::Value(BasicTypes(vec![BasicType::BasicString(s)].into()))
                 } else {
                     unreachable!()
                 }
@@ -235,7 +262,7 @@ impl Property {
     }
 }
 #[derive(Debug, Clone)]
-pub struct BasicTypes(Vec<BasicType>);
+pub struct BasicTypes(VecDeque<BasicType>);
 impl BasicTypes {
     fn from_lex(tokens: &mut VecDeque<TokenWithPos>) -> Self {
         let token = tokens.pop_front().unwrap();
@@ -245,16 +272,19 @@ impl BasicTypes {
                     .into_iter()
                     .map(|token| BasicType::from_lex(token))
                     .collect::<Vec<_>>();
-                Self(values)
+                Self(values.into())
             }
             _ => {
                 let value = BasicType::from_lex(token);
-                Self(vec![value])
+                Self(vec![value].into())
             }
         }
     }
+    fn split(&mut self, size: usize) -> Self {
+        Self(self.0.drain(0..size).collect())
+    }
     pub fn get_string(&self) -> Option<&str> {
-        if let BasicType::BasicString(s) = self.0.first()? {
+        if let BasicType::BasicString(s) = self.0.front()? {
             Some(s)
         } else {
             None
@@ -264,26 +294,22 @@ impl BasicTypes {
         let mut r = Vec::new();
         for basic_type in &self.0 {
             match basic_type {
-                BasicType::BasicFloat(f) => {
-                    r.push(*f)
-                }
-                BasicType::BasicInteger(i) => {
-                    r.push(*i as Float)
-                }
-                _ => panic!()
+                BasicType::BasicFloat(f) => r.push(*f),
+                BasicType::BasicInteger(i) => r.push(*i as Float),
+                _ => panic!(),
             }
         }
         Some(r)
     }
     pub fn get_float(&self) -> Option<Float> {
-        if let BasicType::BasicFloat(f) = self.0.first()? {
+        if let BasicType::BasicFloat(f) = self.0.front()? {
             Some(*f)
         } else {
             Some(self.get_integer()? as Float)
         }
     }
     pub fn get_integer(&self) -> Option<Integer> {
-        if let BasicType::BasicInteger(i) = self.0.first()? {
+        if let BasicType::BasicInteger(i) = self.0.front()? {
             Some(*i)
         } else {
             None
@@ -295,38 +321,91 @@ pub trait ParseFromProperty {
     fn parse_default() -> Self;
 }
 
+pub trait ParseConsumeProperty {
+    fn consume_size() -> usize {
+        1
+    }
+}
+impl<T: ParseConsumeProperty, R: ParseConsumeProperty> ParseConsumeProperty for (T, R) {
+    fn consume_size() -> usize {
+        T::consume_size() + R::consume_size()
+    }
+}
+impl<T: ParseConsumeProperty + ParseFromProperty, R: ParseConsumeProperty + ParseFromProperty>
+    ParseFromProperty for (T, R)
+{
+    fn parse_from_property(property_type: &str, basic_type: &BasicTypes) -> Self {
+        let mut basic_type_r = basic_type.clone();
+        let basic_type_t = basic_type_r.split(T::consume_size());
+        (
+            T::parse_from_property(property_type, &basic_type_t),
+            R::parse_from_property(property_type, &basic_type_r),
+        )
+    }
+    fn parse_default() -> Self {
+        todo!()
+    }
+}
+
+impl<T: ParseConsumeProperty + ParseFromProperty> ParseFromProperty for Vec<T> {
+    fn parse_from_property(property_type: &str, basic_type: &BasicTypes) -> Self {
+        let consume_size = T::consume_size();
+        let len = basic_type.0.len() / consume_size;
+        if len * consume_size != basic_type.0.len() {
+            panic!();
+        }
+        let mut r = Vec::new();
+        let mut basic_type = basic_type.clone();
+        for _ in 0..len {
+            r.push(T::parse_from_property(
+                property_type,
+                &basic_type.split(consume_size),
+            ));
+        }
+        r
+    }
+    fn parse_default() -> Self {
+        Vec::new()
+    }
+}
+
 impl ParseFromProperty for String {
-    fn parse_from_property(_: & str, basic_type: & BasicTypes) -> Self {
+    fn parse_from_property(_: &str, basic_type: &BasicTypes) -> Self {
         String::from(basic_type.get_string().unwrap())
     }
     fn parse_default() -> Self {
         String::new()
     }
 }
+impl ParseConsumeProperty for String {}
 impl ParseFromProperty for Float {
-    fn parse_from_property(_: & str, basic_type: & BasicTypes) -> Self {
+    fn parse_from_property(_: &str, basic_type: &BasicTypes) -> Self {
         basic_type.get_float().unwrap()
     }
     fn parse_default() -> Self {
         0.
     }
 }
+impl ParseConsumeProperty for Float {}
 impl ParseFromProperty for Integer {
-    fn parse_from_property(_: & str, basic_type: & BasicTypes) -> Self {
+    fn parse_from_property(_: &str, basic_type: &BasicTypes) -> Self {
         basic_type.get_integer().unwrap()
     }
     fn parse_default() -> Self {
         0
     }
 }
+impl ParseConsumeProperty for Integer {}
 impl ParseFromProperty for usize {
-    fn parse_from_property(_: & str, basic_type: & BasicTypes) -> Self {
+    fn parse_from_property(_: &str, basic_type: &BasicTypes) -> Self {
         basic_type.get_integer().unwrap() as usize
     }
     fn parse_default() -> Self {
         0
     }
 }
+impl ParseConsumeProperty for usize {}
+
 #[derive(Debug, Clone)]
 pub enum BasicType {
     BasicString(String),

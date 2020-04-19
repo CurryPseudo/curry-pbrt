@@ -13,11 +13,11 @@ impl PerspectiveCamera {
         let resolution = Vector2f::new(resolution.x as Float, resolution.y as Float);
         let aspect = resolution.x / resolution.y;
         let screen_window = if aspect > 1. {
-            Bounds2f::new(Point2f::new(-aspect, -1.), Point2f::new(aspect, 1.))
+            Bounds2f::new(&Point2f::new(-aspect, -1.), &Point2f::new(aspect, 1.))
         } else {
             Bounds2f::new(
-                Point2f::new(-1., -1. / aspect),
-                Point2f::new(1., 1. / aspect),
+                &Point2f::new(-1., -1. / aspect),
+                &Point2f::new(1., 1. / aspect),
             )
         };
         let screen_window_d = screen_window.diagonal();

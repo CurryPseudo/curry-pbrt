@@ -19,6 +19,7 @@ pub fn render(
         //film_tiles.into_iter().for_each(|mut tile| {
         let mut sampler = sampler.box_clone();
         for film_point in tile.bound().index_inside() {
+            trace!("Rendering point {}", film_point);
             sampler.set_pixel(&film_point);
             let mut film_point_f = Point2f::new(film_point.x as Float, film_point.y as Float);
             let sample_per_pixel = sampler.get_sample_per_pixel();
@@ -28,9 +29,6 @@ pub fn render(
                 film_point_f += offset;
                 let ray = camera.generate_ray(film_point_f);
                 let li = integrator.li(&ray, &scene, sampler.as_mut());
-                if film_point == Point2u::new(0, 0) {
-                    trace!("(0, 0) li is {}", li);
-                }
                 samples.push((offset, li));
                 sampler.next_sample();
             }

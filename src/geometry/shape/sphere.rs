@@ -1,10 +1,5 @@
 use super::{Shape, ShapeIntersect, ShapePoint};
-use crate::{
-    def::{Double, Float},
-    geometry::{uniform_sample_hemisphere, Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f},
-    math::{clamp, coordinate_system, INV_PI, PI},
-    sampler::Sampler,
-};
+use crate::*;
 use std::mem::swap;
 
 #[derive(Clone)]
@@ -26,8 +21,8 @@ impl Sphere {
 impl Shape for Sphere {
     fn bound(&self) -> Bounds3f {
         Bounds3f::new(
-            Point3f::from(Vector3f::from_element(-self.radius)),
-            Point3f::from(Vector3f::from_element(self.radius)),
+            &Point3f::from(Vector3f::from_element(-self.radius)),
+            &Point3f::from(Vector3f::from_element(self.radius)),
         )
     }
     fn intersect(&self, ray: &Ray) -> Option<ShapeIntersect> {
@@ -47,20 +42,32 @@ impl Shape for Sphere {
             p *= self.radius / p.coords.magnitude();
             let n = p.coords.normalize();
             let n = if inside { Normal3f(-n) } else { Normal3f(n) };
-            Some(ShapeIntersect::new(p, n, t, self.calc_uv(p)))
+            let p_error = gamma(5) * p.coords.abs();
+            Some(ShapeIntersect::new(
+                p,
+                n,
+                t,
+                self.calc_uv(p),
+                p_error
+            ))
         }
     }
-    fn sample(&self, sampler: &mut dyn Sampler) -> ShapePoint {
+    fn sample(&self, sampler: &mut dyn Sampler) -> (ShapePoint, Float) {
         let d = uniform_sample_hemisphere(sampler.get_2d());
         let p = Point3f::from(d * self.radius);
         let n = Normal3f::from(d);
-        ShapePoint::new(p, n, self.calc_uv(p))
+        let p = p * (self.radius / p.coords.magnitude());
+        let p_error = gamma(5) * p.coords.abs();
+        (
+            ShapePoint::new(p, n, self.calc_uv(p), p_error),
+            1. / self.area(),
+        )
     }
-    fn sample_by_point(&self, point: &Point3f, sampler: &mut dyn Sampler) -> ShapePoint {
+    fn sample_by_point(&self, point: &Point3f, sampler: &mut dyn Sampler) -> (ShapePoint, Float) {
         let distance_2 = point.coords.magnitude_squared();
         let radius_2 = self.radius * self.radius;
         if distance_2 < radius_2 {
-            return self.sample(sampler);
+            return self.default_sample_by_point(point, sampler);
         }
         let distance = distance_2.sqrt();
         let z = point.coords / distance;
@@ -80,7 +87,11 @@ impl Shape for Sphere {
         let d = cos_alpha * z + sin_alpha * phi.cos() * x + sin_alpha * phi.sin() * y;
         let n = Normal3f::from(d);
         let p = Point3f::from(d * self.radius);
-        ShapePoint::new(p, n, self.calc_uv(p))
+        let p_error = gamma(5) * p.coords.abs();
+        (
+            ShapePoint::new(p, n, self.calc_uv(p), p_error),
+            (1. / (2. * PI * (1. - cos_theta_max))),
+        )
     }
     fn by_point_pdf(&self, point: &Point3f, shape_point: &ShapePoint) -> Float {
         let distance_2 = point.coords.magnitude_squared();

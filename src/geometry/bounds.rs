@@ -42,8 +42,15 @@ impl<T: BoundsTrait, N: DimName> Bounds<T, N>
 where
     DefaultAllocator: Allocator<T, N>,
 {
-    pub fn new(min: Point<T, N>, max: Point<T, N>) -> Self {
-        Self { min, max }
+    pub fn new(p1: &Point<T, N>, p2: &Point<T, N>) -> Self {
+        let dim = N::dim();
+        let mut min_p = p1.clone();
+        let mut max_p = p1.clone();
+        for i in 0..dim {
+            min_p[i] = min(min_p[i], p2[i]);
+            max_p[i] = max(max_p[i], p2[i]);
+        }
+        Self{min: min_p, max: max_p}
     }
     pub fn corner(&self, index: usize) -> Point<T, N> {
         let dim = N::dim();
@@ -122,7 +129,7 @@ where
     DefaultAllocator: Allocator<T, N>,
 {
     fn from(p: Point<T, N>) -> Self {
-        Self::new(p.clone(), p)
+        Self{min: p.clone(), max: p}
     }
 }
 impl<T: BoundsTrait, N: DimName> Default for Bounds<T, N>

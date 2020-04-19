@@ -9,42 +9,24 @@ pub use point::*;
 use std::sync::Arc;
 
 pub trait Light: Sync + Send {
-    fn visibility_test_ray(&self, point: &Point3f, wi: &Vector3f) -> Ray;
     fn sample_li(
         &self,
-        point: &Point3f,
+        point: &ShapePoint,
         sampler: &mut dyn Sampler,
-        scene: &Scene,
-    ) -> (Vector3f, Option<Spectrum>, Float) {
-        let li_pdf = self.sample_li_without_visibility_test(point, sampler);
-        let (wi, li, pdf) = li_pdf;
-        if li.is_some() {
-            let mut ray = self.visibility_test_ray(&point, &wi);
-            ray.move_a_bit();
-            if scene.intersect_predicate(&ray) {
-                (wi, None, pdf)
-            } else {
-                li_pdf
-            }
-        } else {
-            li_pdf
-        }
-    }
-    fn sample_li_without_visibility_test(
-        &self,
-        point: &Point3f,
-        sampler: &mut dyn Sampler,
-    ) -> (Vector3f, Option<Spectrum>, Float);
+    ) -> (Vector3f, Option<Spectrum>, Float, VisibilityTester);
     fn le_out_scene(&self, _: &Ray) -> Float {
         0.
     }
-    fn le_pdf(&self, ray: &Ray, scene: &Scene) -> (Option<Spectrum>, Float);
+    fn pdf(&self, point: &Point3f, shape_point: &ShapePoint) -> Float;
     fn box_apply(&self, transform: &Transform) -> Box<dyn Light>;
     fn is_delta(&self) -> bool {
         false
     }
-    fn le(&self, _: &ShapePoint) -> Spectrum {
-        Spectrum::new(0.)
+    fn le(&self, _: &ShapePoint) -> Option<Spectrum> {
+        None
+    }
+    fn le_pdf(&self, point: &Point3f, shape_point: &ShapePoint) -> (Option<Spectrum>, Float) {
+        (self.le(shape_point), self.pdf(point, shape_point))
     }
 }
 
@@ -66,7 +48,9 @@ pub fn parse_light(property_set: &PropertySet) -> Box<dyn Light> {
         _ => panic!(),
     }
 }
-pub fn parse_area_light(property_set: &PropertySet) -> Box<dyn Fn(Arc<dyn Shape>) -> Box<dyn Light>> {
+pub fn parse_area_light(
+    property_set: &PropertySet,
+) -> Box<dyn Fn(Arc<dyn Shape>) -> Box<dyn Light>> {
     match property_set.get_name().unwrap() {
         "diffuse" => {
             let l = property_set.get_default("L");
@@ -74,33 +58,45 @@ pub fn parse_area_light(property_set: &PropertySet) -> Box<dyn Fn(Arc<dyn Shape>
         }
         _ => panic!(),
     }
-
 }
 
 pub trait DeltaLight: Clone + Transformable {
-    fn sample_li(&self, point: &Point3f) -> (Vector3f, Option<Spectrum>);
+    fn sample_li(&self, point: &ShapePoint) -> (Vector3f, Option<Spectrum>, VisibilityTester);
     fn visibility_test_ray(&self, point: &Point3f, wi: &Vector3f) -> Ray;
 }
 impl<T: DeltaLight + 'static + Sync + Send> Light for T {
-    fn visibility_test_ray(&self, point: &Point3f, wi: &Vector3f) -> Ray {
-        self.visibility_test_ray(point, wi)
-    }
-    fn sample_li_without_visibility_test(
-        &self,
-        point: &Point3f,
-        sampler: &mut dyn Sampler,
-    ) -> (Vector3f, Option<Spectrum>, Float) {
-        sampler.get_2d();
-        let (wi, li) = self.sample_li(point);
-        (wi, li, 1.)
-    }
     fn box_apply(&self, transform: &Transform) -> Box<dyn Light> {
         Box::new(self.clone().apply(&transform))
     }
     fn is_delta(&self) -> bool {
         true
     }
-    fn le_pdf(&self, _: &Ray, _: &Scene) -> (Option<Spectrum>, Float) {
-        (None, 0.)
+    fn pdf(&self, _: &Point3f, _: &ShapePoint) -> Float {
+        0.
+    }
+    fn sample_li(
+        &self,
+        point: &ShapePoint,
+        sampler: &mut dyn Sampler,
+    ) -> (Vector3f, Option<Spectrum>, Float, VisibilityTester) {
+        sampler.get_2d();
+        let (wi, s, visibility_tester) = self.sample_li(point);
+        (wi, s, 1., visibility_tester)
+    }
+}
+
+pub struct VisibilityTester(Ray);
+impl VisibilityTester {
+    pub fn new(from: &ShapePoint, to: &ShapePoint) -> Self {
+        let from = from.point_offset_by_error(&(to.p - from.p));
+        let to = to.point_offset_by_error(&(from - to.p));
+        Self(Ray::from_to(from, to))
+    }
+    pub fn new_od(o: &ShapePoint, d: &Vector3f) -> Self {
+        Self(Ray::new_od(o.point_offset_by_error(d), *d))
+    }
+
+    pub fn unoccluded(&self, scene: &Scene) -> bool {
+        !scene.intersect_predicate(&self.0)
     }
 }
