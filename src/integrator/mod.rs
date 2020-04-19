@@ -12,8 +12,8 @@ impl ParseFromBlockSegment for Box<dyn Integrator> {
         let property_set = segment.get_object_by_type("Integrator")?;
         match property_set.get_name().unwrap() {
             "directlighting" => {
-                let _max_depth = property_set.get_value("maxdepth").unwrap_or(1);
-                Some(Box::new(DirectLightIntegrator::new()))
+                let max_depth = property_set.get_value("maxdepth").unwrap_or(1);
+                Some(Box::new(DirectLightIntegrator::new(max_depth)))
             }
             _ => panic!(),
         }

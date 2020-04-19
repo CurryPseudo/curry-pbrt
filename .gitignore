@@ -5,3 +5,4 @@ scenes/landscape
 image
 flame.*
 perf.*
+.err

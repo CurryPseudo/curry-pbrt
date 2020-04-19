@@ -74,7 +74,7 @@ impl PrimitiveIntersect {
             .get_light()?
             .le(self.shape_intersect.get_shape_point())
     }
-    pub fn compute_scattering_functions(&self) -> Option<Box<dyn BxDF>> {
+    pub fn compute_scattering_functions(&self) -> Option<BSDF> {
         Some(
             self.primitive
                 .source

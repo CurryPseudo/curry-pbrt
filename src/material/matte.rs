@@ -1,4 +1,5 @@
 use crate::*;
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct MatteMaterial {
@@ -13,17 +14,17 @@ impl MatteMaterial {
 }
 
 impl Material for MatteMaterial {
-    fn compute_scattering_functions(&self, shape_intersect: &ShapeIntersect) -> Box<dyn BxDF> {
+    fn compute_scattering_functions(&self, shape_intersect: &ShapeIntersect) -> BSDF {
         let kd = self.kd.evaluate(shape_intersect.get_uv());
         let sigma = clamp(self.sigma.evaluate(shape_intersect.get_uv()), 0., 90.);
         let mut bsdf = BSDF::new(*shape_intersect.get_normal(), *shape_intersect.get_normal());
         if sigma == 0. {
-            bsdf.add_bxdf(Box::new(Lambertian::new(kd)));
+            bsdf.add_bxdf(Arc::new(Lambertian::new(kd)));
         }
         else {
-            bsdf.add_bxdf(Box::new(OrenNayar::new(kd, sigma)))
+            bsdf.add_bxdf(Arc::new(OrenNayar::new(kd, sigma)))
         }
-        Box::new(bsdf)
+        bsdf
     }
     fn box_clone(&self) -> Box<dyn Material> {
         Box::new(self.clone())

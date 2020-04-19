@@ -1,9 +1,14 @@
 mod lambertian;
 mod oren_nayar;
+mod specular;
 use crate::*;
 pub use lambertian::*;
 pub use oren_nayar::*;
-use std::ops::{Add, Div};
+pub use specular::*;
+use std::{
+    ops::{Add, AddAssign, Div, DivAssign},
+    sync::Arc,
+};
 
 pub trait BxDF {
     fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Option<Spectrum>;
@@ -79,7 +84,8 @@ pub struct BSDF {
     sn: Vector3f,
     snx: Vector3f,
     sny: Vector3f,
-    bxdfs: Vec<Box<dyn BxDF>>,
+    bxdfs: Vec<Arc<dyn BxDF>>,
+    delta_bxdfs: Vec<Arc<dyn DeltaBxDF>>,
 }
 
 impl BSDF {
@@ -93,17 +99,24 @@ impl BSDF {
             snx,
             sny,
             bxdfs: Vec::new(),
+            delta_bxdfs: Vec::new(),
         }
     }
-    fn average<T: Add<Output = T> + Div<Float, Output = T> + Default, F: Fn(&dyn BxDF) -> T>(
+    fn average<T: AddAssign + DivAssign<Float> + Default, F: Fn(&dyn BxDF) -> T>(&self, f: F) -> T {
+        let sum = T::default();
+        self.average_general(|bxdf, sum| *sum += f(bxdf), |sum, f| *sum /= f, sum)
+    }
+    fn average_general<A: Fn(&dyn BxDF, &mut T), D: Fn(&mut T, Float), T>(
         &self,
-        f: F,
+        a: A,
+        d: D,
+        mut t: T,
     ) -> T {
-        let mut sum = T::default();
         for bxdf in &self.bxdfs {
-            sum = sum + f(bxdf.as_ref());
+            a(bxdf.as_ref(), &mut t);
         }
-        sum / self.bxdfs.len() as Float
+        d(&mut t, self.bxdfs.len() as Float);
+        t
     }
     fn local_to_world(&self, w: &Vector3f) -> Vector3f {
         w.x * self.snx + w.y * self.sny + w.z * self.sn
@@ -111,8 +124,22 @@ impl BSDF {
     fn world_to_local(&self, w: &Vector3f) -> Vector3f {
         Vector3f::new(w.dot(&self.snx), w.dot(&self.sny), w.dot(&self.sn))
     }
-    pub fn add_bxdf(&mut self, bxdf: Box<dyn BxDF>) {
+    pub fn add_bxdf<T: BxDF + 'static>(&mut self, bxdf: Arc<T>) {
         self.bxdfs.push(bxdf);
+    }
+    pub fn add_delta_bxdf<T: DeltaBxDF + BxDF + 'static>(&mut self, delta_bxdf: Arc<T>) {
+        self.delta_bxdfs.push(delta_bxdf.clone());
+        self.bxdfs.push(delta_bxdf);
+    }
+    pub fn sample_delta_wi(&self, wo: &Vector3f) -> Vec<(Vector3f, Spectrum)> {
+        let mut r = Vec::new();
+        for delta_bxdf in &self.delta_bxdfs {
+            let (wi, s) = delta_bxdf.sample_f(&self.world_to_local(wo));
+            if let Some(s) = s {
+                r.push((self.local_to_world(&wi), s));
+            }
+        }
+        r
     }
 }
 
@@ -136,13 +163,18 @@ impl BxDF for BSDF {
     fn f_pdf(&self, wo: &Vector3f, wi: &Vector3f) -> (Option<Spectrum>, Float) {
         let wo = self.world_to_local(wo);
         let wi = self.world_to_local(wi);
-        let mut f = Spectrum::default();
-        let mut pdf = 0.;
-        for i in 0..self.bxdfs.len() {
-            let (bxdf_f, bxdf_pdf) = self.bxdfs[i].f_pdf(&wo, &wi);
-            f += bxdf_f;
-            pdf += bxdf_pdf;
-        }
+        let (f, pdf) = self.average_general(
+            |bxdf, (f, pdf)| {
+                let (this_f, this_pdf) = bxdf.f_pdf(&wo, &wi);
+                *f += this_f;
+                *pdf += this_pdf
+            },
+            |(f, pdf), len| {
+                *f /= len;
+                *pdf /= len;
+            },
+            (Spectrum::default(), 0.),
+        );
         (f.to_option(), pdf)
     }
     fn sample_f(
@@ -166,5 +198,27 @@ impl BxDF for BSDF {
         f /= bxdfs_len_f;
         pdf /= bxdfs_len_f;
         (self.local_to_world(&wi_local), f.to_option(), pdf)
+    }
+}
+
+pub trait DeltaBxDF {
+    fn sample_f(&self, wo: &Vector3f) -> (Vector3f, Option<Spectrum>);
+}
+
+impl<T: DeltaBxDF> BxDF for T {
+    fn sample_f(
+        &self,
+        wo: &Vector3f,
+        sampler: &mut dyn Sampler,
+    ) -> (Vector3f, Option<Spectrum>, Float) {
+        sampler.get_2d();
+        let (wi, s) = self.sample_f(wo);
+        (wi, s, 1.)
+    }
+    fn pdf(&self, _wo: &Vector3f, _wi: &Vector3f) -> Float {
+        0.
+    }
+    fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Option<Spectrum> {
+        None
     }
 }

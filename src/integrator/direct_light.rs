@@ -2,24 +2,29 @@ use super::Integrator;
 use crate::*;
 use std::sync::Arc;
 
-pub struct DirectLightIntegrator {}
-
-impl DirectLightIntegrator {
-    pub fn new() -> Self {
-        Self {}
-    }
+pub struct DirectLightIntegrator {
+    max_depth: usize,
 }
 
-impl Integrator for DirectLightIntegrator {
-    fn li(&self, ray: &Ray, scene: &Scene, sampler: &mut dyn Sampler) -> Spectrum {
+impl DirectLightIntegrator {
+    pub fn new(max_depth: usize) -> Self {
+        Self { max_depth }
+    }
+    fn li_depth(
+        &self,
+        ray: &Ray,
+        scene: &Scene,
+        sampler: &mut dyn Sampler,
+        depth: usize,
+    ) -> Spectrum {
         let mut l = Spectrum::new(0.);
         if let Some(intersect) = scene.intersect(ray) {
             if let Some(bsdf) = intersect.compute_scattering_functions() {
                 let lights = scene.get_lights();
+                let wo = -ray.d.normalize();
+                let shape_point = &intersect.get_shape_intersect().get_shape_point();
                 if lights.len() > 0 {
-                    let wo = -ray.d.normalize();
                     let light = &lights[(sampler.get_usize(lights.len())) as usize];
-                    let shape_point = &intersect.get_shape_intersect().get_shape_point();
                     let point = shape_point.p.clone();
                     let n = &intersect.get_shape_intersect().get_normal();
                     {
@@ -70,6 +75,13 @@ impl Integrator for DirectLightIntegrator {
                     }
                 }
                 l *= lights.len() as Float;
+                if depth + 1 < self.max_depth {
+                    trace!("depth {} with deltas {:?}", depth, bsdf.sample_delta_wi(&wo));
+                    for (wi, s) in bsdf.sample_delta_wi(&wo) {
+                        let ray = Ray::new_shape_point_d(&shape_point, wi);
+                        l += self.li_depth(&ray, scene, sampler, depth + 1) * s;
+                    }
+                }
             } else {
                 l += intersect.le();
             }
@@ -79,5 +91,11 @@ impl Integrator for DirectLightIntegrator {
             }
         }
         l
+    }
+}
+
+impl Integrator for DirectLightIntegrator {
+    fn li(&self, ray: &Ray, scene: &Scene, sampler: &mut dyn Sampler) -> Spectrum {
+        self.li_depth(ray, scene, sampler, 0)
     }
 }
