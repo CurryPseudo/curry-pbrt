@@ -17,7 +17,10 @@ pub trait BxDF {
         wo: &Vector3f,
         sampler: &mut dyn Sampler,
     ) -> (Vector3f, Option<Spectrum>, Float) {
-        let (wi, pdf) = cosine_sample_hemisphere(sampler.get_2d());
+        let (mut wi, pdf) = cosine_sample_hemisphere(sampler.get_2d());
+        if wo.z < 0. {
+            wi.z *= -1.;
+        }
         let f = self.f(wo, &wi);
         (wi, f, pdf)
     }
@@ -102,10 +105,6 @@ impl BSDF {
             delta_bxdfs: Vec::new(),
         }
     }
-    fn average<T: AddAssign + DivAssign<Float> + Default, F: Fn(&dyn BxDF) -> T>(&self, f: F) -> T {
-        let sum = T::default();
-        self.average_general(|bxdf, sum| *sum += f(bxdf), |sum, f| *sum /= f, sum)
-    }
     fn average_general<A: Fn(&dyn BxDF, &mut T), D: Fn(&mut T, Float), T>(
         &self,
         a: A,
@@ -119,7 +118,14 @@ impl BSDF {
         t
     }
     fn local_to_world(&self, w: &Vector3f) -> Vector3f {
-        w.x * self.snx + w.y * self.sny + w.z * self.sn
+        let snx = &self.snx;
+        let sny = &self.sny;
+        let sn = &self.sn;
+        Vector3f::new(
+            snx.x * w.x + sny.x * w.y + sn.x * w.z,
+            snx.y * w.x + sny.y * w.y + sn.y * w.z,
+            snx.z * w.x + sny.z * w.y + sn.z * w.z,
+        )
     }
     fn world_to_local(&self, w: &Vector3f) -> Vector3f {
         Vector3f::new(w.dot(&self.snx), w.dot(&self.sny), w.dot(&self.sn))
@@ -130,7 +136,7 @@ impl BSDF {
     pub fn add_delta_bxdf<T: DeltaBxDF + BxDF + 'static>(&mut self, delta_bxdf: Arc<T>) {
         self.delta_bxdfs.push(delta_bxdf.clone());
     }
-    pub fn sample_delta_wi(&self, wo: &Vector3f) -> Vec<(Vector3f, Spectrum)> {
+    pub fn sample_all_delta_f(&self, wo: &Vector3f) -> Vec<(Vector3f, Spectrum)> {
         let mut r = Vec::new();
         for delta_bxdf in &self.delta_bxdfs {
             if let Some((wi, s)) = delta_bxdf.sample_f(&self.world_to_local(wo)) {
@@ -139,25 +145,64 @@ impl BSDF {
         }
         r
     }
-}
-
-impl BxDF for BSDF {
-    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Option<Spectrum> {
-        let wo = self.world_to_local(wo);
-        let wi = self.world_to_local(wi);
-        let s: Spectrum = self.average(|bxdf| bxdf.f(&wo, &wi).into());
-        s.to_option()
-    }
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
-        if self.bxdfs.is_empty() {
-            return 0.;
+    fn choose_no_delta_f(
+        &self,
+        index: usize,
+        wo: &Vector3f,
+        sampler: &mut dyn Sampler,
+    ) -> (Vector3f, Option<Spectrum>, Float) {
+        let choose_bxdf = &self.bxdfs[index];
+        let wo_local = self.world_to_local(wo);
+        let (wi_local, f, mut pdf) = choose_bxdf.sample_f(&wo_local, sampler);
+        let mut f: Spectrum = f.into();
+        for i in 0..self.bxdfs.len() {
+            if i != index {
+                let (bxdf_f, bxdf_pdf) = self.bxdfs[i].f_pdf(&wo_local, &wi_local);
+                f += bxdf_f;
+                pdf += bxdf_pdf;
+            }
         }
-        let wo = self.world_to_local(wo);
-        let wi = self.world_to_local(wi);
-        let pdf = self.average(|bxdf| bxdf.pdf(&wo, &wi));
-        pdf
+        let bxdfs_len_f = self.bxdfs.len() as Float;
+        f /= bxdfs_len_f;
+        pdf /= bxdfs_len_f;
+        (self.local_to_world(&wi_local), f.to_option(), pdf)
     }
-    fn f_pdf(&self, wo: &Vector3f, wi: &Vector3f) -> (Option<Spectrum>, Float) {
+    fn choose_delta_f(&self, index: usize, wo: &Vector3f) -> (Vector3f, Option<Spectrum>, Float) {
+        let choose_delta = &self.delta_bxdfs[index];
+        let wo_local = self.world_to_local(wo);
+        if let Some((wi_local, f)) = choose_delta.sample_f(&wo_local) {
+            (
+                self.local_to_world(&wi_local),
+                Some(f),
+                1. / self.delta_bxdfs.len() as Float,
+            )
+        } else {
+            (Vector3f::new(0., 0., 0.), None, 0.)
+        }
+    }
+    pub fn sample_no_delta_f(
+        &self,
+        wo: &Vector3f,
+        sampler: &mut dyn Sampler,
+    ) -> (Vector3f, Option<Spectrum>, Float) {
+        if self.bxdfs.is_empty() {
+            return (Vector3f::new(0., 0., 0.), None, 0.);
+        }
+        let index = sampler.get_usize(self.bxdfs.len());
+        self.choose_no_delta_f(index, wo, sampler)
+    }
+    pub fn sample_delta_f(
+        &self,
+        wo: &Vector3f,
+        sampler: &mut dyn Sampler,
+    ) -> (Vector3f, Option<Spectrum>, Float) {
+        if self.delta_bxdfs.is_empty() {
+            return (Vector3f::new(0., 0., 0.), None, 0.);
+        }
+        let index = sampler.get_usize(self.delta_bxdfs.len());
+        self.choose_delta_f(index, wo)
+    }
+    pub fn f_pdf(&self, wo: &Vector3f, wi: &Vector3f) -> (Option<Spectrum>, Float) {
         if self.bxdfs.is_empty() {
             return (None, 0.);
         }
@@ -177,30 +222,21 @@ impl BxDF for BSDF {
         );
         (f.to_option(), pdf)
     }
-    fn sample_f(
+    pub fn sample_f(
         &self,
         wo: &Vector3f,
         sampler: &mut dyn Sampler,
-    ) -> (Vector3f, Option<Spectrum>, Float) {
-        if self.bxdfs.is_empty() {
-            return (Vector3f::new(0., 0., 0.), None, 0.);
-        }
-        let choose_index = sampler.get_usize(self.bxdfs.len());
-        let choose_bxdf = &self.bxdfs[choose_index];
-        let wo_local = self.world_to_local(wo);
-        let (wi_local, f, mut pdf) = choose_bxdf.sample_f(&wo_local, sampler);
-        let mut f: Spectrum = f.into();
-        for i in 0..self.bxdfs.len() {
-            if i != choose_index {
-                let (bxdf_f, bxdf_pdf) = self.bxdfs[i].f_pdf(&wo_local, &wi_local);
-                f += bxdf_f;
-                pdf += bxdf_pdf;
-            }
-        }
-        let bxdfs_len_f = self.bxdfs.len() as Float;
-        f /= bxdfs_len_f;
-        pdf /= bxdfs_len_f;
-        (self.local_to_world(&wi_local), f.to_option(), pdf)
+    ) -> (Vector3f, Option<Spectrum>, Float, bool) {
+        let index = sampler.get_usize(self.bxdfs.len() + self.delta_bxdfs.len());
+        let ((wi, f, pdf), is_delta) = if index < self.bxdfs.len() {
+            (self.choose_no_delta_f(index, wo, sampler), false)
+        } else {
+            (self.choose_delta_f(index - self.bxdfs.len(), wo), true)
+        };
+        (wi, f, pdf, is_delta)
+    }
+    pub fn is_all_delta(&self) -> bool {
+        self.bxdfs.is_empty()
     }
 }
 

@@ -6,7 +6,8 @@ Film "image"
    "integer xresolution" [1600]
    "integer yresolution" [900]
 
-Integrator "directlighting" "integer maxdepth" [20] 
+# Integrator "directlighting" "integer maxdepth" [2] 
+Integrator "path" "integer maxdepth" [2]
 
 
 WorldBegin
@@ -15,7 +16,7 @@ WorldBegin
 
 AttributeBegin
    AreaLightSource "diffuse" "spectrum L" [400.0 0.0 500.0 8.0 600.0 15.6 700.0 18.4]
-   # AreaLightSource "diffuse" "rgb L" [ 36 36 36 ]
+   # AreaLightSource "diffuse" "rgb L" [ 0. 1. 0. ]
    Material "matte"
    "spectrum Kd" [400.0 0.0 500.0 8.0 600.0 15.6 700.0 18.4]
 
@@ -159,7 +160,6 @@ AttributeEnd
 # material { glass ior 1.5 r { constant spd { 1 0.95 } } }
 
 AttributeBegin
-   Material "glass"
    Shape "trianglemesh"
    "integer indices" [
       3 2 0 2 1 0
@@ -200,7 +200,7 @@ AttributeEnd
 #
 
 AttributeBegin
-   Material "mirror" "rgb Kr" [1. 1. 1.]
+   Material "mirror"
    Shape "trianglemesh"
    "integer indices" [
       3 2 0 2 1 0

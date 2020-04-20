@@ -9,4 +9,5 @@ do
 	rsync_create_directory $file ~/bebby/curry-pbrt/
 done
 output_file=$(ssh 192.168.0.101 "cd h/curry-pbrt; cargo run --release --example render_from_file $1")
-cp ~/bebby/curry-pbrt/$output_file image/
+cp ~/bebby/curry-pbrt/$output_file image/server/
+notify-send "Server render done"

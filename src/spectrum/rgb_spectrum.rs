@@ -64,7 +64,7 @@ impl RGBSpectrum {
     pub fn to_xyz(self) -> Self {
         let mut r = [0., 0., 0.];
         r[0] = 0.412453 * self.0[0] + 0.357580 * self.0[1] + 0.180423 * self.0[2];
-        r[1] = 0.212671 * self.0[0] + 0.715160 * self.0[1] + 0.072169 * self.0[2];
+        r[1] = self.y();
         r[2] = 0.019334 * self.0[0] + 0.119193 * self.0[1] + 0.950227 * self.0[2];
         Self(r)
     }
@@ -75,6 +75,9 @@ impl RGBSpectrum {
         r[2] = 0.055648 * self.0[0] - 0.204043 * self.0[1] + 1.057311 * self.0[2];
         Self(r)
     }
+    pub fn y(&self) -> Float {
+        0.212671 * self.0[0] + 0.715160 * self.0[1] + 0.072169 * self.0[2]
+    }
     pub fn from_sampled(mut sampled: Vec<(Float, Float)>) -> Self {
         sampled.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
         let mut xyz = Spectrum::new(0.);
@@ -82,7 +85,8 @@ impl RGBSpectrum {
             let val = interpolate_spectrum_samples(&sampled, i);
             xyz += val * CIE[i];
         }
-        let scale = (CIE_LAMBDA[N_CIE_SAMPLES - 1] - CIE_LAMBDA[0]) / (CIE_Y_INTEGRAL * N_CIE_SAMPLES as Float);
+        let scale = (CIE_LAMBDA[N_CIE_SAMPLES - 1] - CIE_LAMBDA[0])
+            / (CIE_Y_INTEGRAL * N_CIE_SAMPLES as Float);
         xyz *= scale;
         xyz.from_xyz()
     }
@@ -181,7 +185,7 @@ impl ParseFromProperty for RGBSpectrum {
                     panic!()
                 }
                 RGBSpectrum::from([floats[0], floats[1], floats[2]])
-            },
+            }
             "spectrum" => {
                 let sampled = Vec::parse_from_property(type_name, basic_type);
                 debug!("{:?}", sampled);

@@ -85,6 +85,9 @@ impl PrimitiveIntersect {
     pub fn get_shape_intersect(&self) -> &ShapeIntersect {
         &self.shape_intersect
     }
+    pub fn get_shape_point(&self) -> &ShapePoint {
+        &self.shape_intersect.get_shape_point()
+    }
     pub fn get_shape(&self) -> &Arc<dyn Shape> {
         &self.primitive.shape
     }

@@ -11,7 +11,7 @@ impl Lambertian {
 
 
 impl BxDF for Lambertian {
-    fn f(&self, _: &Vector3f, _: &Vector3f) -> Option<Spectrum> {
+    fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Option<Spectrum> {
         Some(self.r.clone() * INV_PI)
     }
 }
