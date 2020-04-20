@@ -7,7 +7,7 @@ Film "image"
    "integer yresolution" [900]
 
 # Integrator "directlighting" "integer maxdepth" [2] 
-Integrator "path" "integer maxdepth" [2]
+Integrator "path" "integer maxdepth" [5]
 
 
 WorldBegin
@@ -20,9 +20,9 @@ AttributeBegin
    Material "matte"
    "spectrum Kd" [400.0 0.0 500.0 8.0 600.0 15.6 700.0 18.4]
 
-   # Translate 278 548.7 279.5
-   # Shape "sphere" "float radius" [60]
-   Shape "trianglemesh"
+   Translate 278 548.7 279.5
+   Shape "sphere" "float radius" [60]
+   # Shape "trianglemesh"
    "integer indices" [ 0 1 2  2 3 0 ]
    "point P" [
       343.0 548.7 227.0
@@ -190,7 +190,7 @@ AttributeBegin
      82.0 165.0 225.0
      82.0   0.0 225.0 ]
 	Material "glass"
-	Translate 268 247.5 176.5
+	Translate 188 247.5 176.5
 	Shape "sphere" "float radius" [82.5]
 AttributeEnd
 

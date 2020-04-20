@@ -5,19 +5,12 @@ use crate::*;
 pub use lambertian::*;
 pub use oren_nayar::*;
 pub use specular::*;
-use std::{
-    ops::{AddAssign, DivAssign},
-    sync::Arc,
-};
+use std::sync::Arc;
 
 pub trait BxDF {
     fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Option<Spectrum>;
-    fn sample_f(
-        &self,
-        wo: &Vector3f,
-        sampler: &mut dyn Sampler,
-    ) -> (Vector3f, Option<Spectrum>, Float) {
-        let (mut wi, pdf) = cosine_sample_hemisphere(sampler.get_2d());
+    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> (Vector3f, Option<Spectrum>, Float) {
+        let (mut wi, pdf) = cosine_sample_hemisphere(*u);
         if wo.z < 0. {
             wi.z *= -1.;
         }
@@ -149,11 +142,11 @@ impl BSDF {
         &self,
         index: usize,
         wo: &Vector3f,
-        sampler: &mut dyn Sampler,
+        u: &Point2f,
     ) -> (Vector3f, Option<Spectrum>, Float) {
         let choose_bxdf = &self.bxdfs[index];
         let wo_local = self.world_to_local(wo);
-        let (wi_local, f, mut pdf) = choose_bxdf.sample_f(&wo_local, sampler);
+        let (wi_local, f, mut pdf) = choose_bxdf.sample_f(&wo_local, u);
         let mut f: Spectrum = f.into();
         for i in 0..self.bxdfs.len() {
             if i != index {
@@ -167,40 +160,32 @@ impl BSDF {
         pdf /= bxdfs_len_f;
         (self.local_to_world(&wi_local), f.to_option(), pdf)
     }
-    fn choose_delta_f(&self, index: usize, wo: &Vector3f) -> (Vector3f, Option<Spectrum>, Float) {
-        let choose_delta = &self.delta_bxdfs[index];
-        let wo_local = self.world_to_local(wo);
-        if let Some((wi_local, f)) = choose_delta.sample_f(&wo_local) {
-            (
-                self.local_to_world(&wi_local),
-                Some(f),
-                1. / self.delta_bxdfs.len() as Float,
-            )
-        } else {
-            (Vector3f::new(0., 0., 0.), None, 0.)
-        }
-    }
     pub fn sample_no_delta_f(
         &self,
         wo: &Vector3f,
-        sampler: &mut dyn Sampler,
+        u: &Point2f,
     ) -> (Vector3f, Option<Spectrum>, Float) {
         if self.bxdfs.is_empty() {
             return (Vector3f::new(0., 0., 0.), None, 0.);
         }
-        let index = sampler.get_usize(self.bxdfs.len());
-        self.choose_no_delta_f(index, wo, sampler)
+        let (index, remap) = sample_usize_remap(u.x, self.bxdfs.len());
+        self.choose_no_delta_f(index, wo, &Point2f::new(remap, u.y))
     }
-    pub fn sample_delta_f(
-        &self,
-        wo: &Vector3f,
-        sampler: &mut dyn Sampler,
-    ) -> (Vector3f, Option<Spectrum>, Float) {
+    pub fn sample_delta_f(&self, wo: &Vector3f, u: Float) -> (Vector3f, Option<Spectrum>, Float) {
+        let wo_local = &self.world_to_local(wo);
         if self.delta_bxdfs.is_empty() {
             return (Vector3f::new(0., 0., 0.), None, 0.);
         }
-        let index = sampler.get_usize(self.delta_bxdfs.len());
-        self.choose_delta_f(index, wo)
+        let mut wi_f = Vec::new();
+        for i in 0..self.delta_bxdfs.len() {
+            let delta_bxdf = &self.delta_bxdfs[i];
+            if let Some((wi_local, f)) = delta_bxdf.sample_f(wo_local) {
+                wi_f.push((wi_local, f));
+            }
+        }
+        let (i, pdf, _) = sample_distribution_1d_remap(u, wi_f.len(), &|i| wi_f[i].1.y());
+        let (wi_local, f) = wi_f[i];
+        (self.local_to_world(&wi_local), Some(f), pdf)
     }
     pub fn f_pdf(&self, wo: &Vector3f, wi: &Vector3f) -> (Option<Spectrum>, Float) {
         if self.bxdfs.is_empty() {
@@ -227,13 +212,16 @@ impl BSDF {
         wo: &Vector3f,
         sampler: &mut dyn Sampler,
     ) -> (Vector3f, Option<Spectrum>, Float, bool) {
-        let index = sampler.get_usize(self.bxdfs.len() + self.delta_bxdfs.len());
-        let ((wi, f, pdf), is_delta) = if index < self.bxdfs.len() {
-            (self.choose_no_delta_f(index, wo, sampler), false)
+        let (i, pdf, remap) = sampler.get_distribution_1d_remap(2, &|i| if i == 0 {self.bxdfs.len()} else {self.delta_bxdfs.len()} as Float );
+        let ((wi, f, internal_pdf), is_delta) = if i == 0 {
+            (
+                self.sample_no_delta_f(wo, &Point2f::new(remap, sampler.get_1d())),
+                false,
+            )
         } else {
-            (self.choose_delta_f(index - self.bxdfs.len(), wo), true)
+            (self.sample_delta_f(wo, remap), true)
         };
-        (wi, f, pdf, is_delta)
+        (wi, f, pdf * internal_pdf, is_delta)
     }
     pub fn is_all_delta(&self) -> bool {
         self.bxdfs.is_empty()
@@ -245,12 +233,7 @@ pub trait DeltaBxDF {
 }
 
 impl<T: DeltaBxDF> BxDF for T {
-    fn sample_f(
-        &self,
-        wo: &Vector3f,
-        sampler: &mut dyn Sampler,
-    ) -> (Vector3f, Option<Spectrum>, Float) {
-        sampler.get_2d();
+    fn sample_f(&self, wo: &Vector3f, _: &Point2f) -> (Vector3f, Option<Spectrum>, Float) {
         if let Some((wi, s)) = self.sample_f(wo) {
             (wi, Some(s), 1.)
         } else {

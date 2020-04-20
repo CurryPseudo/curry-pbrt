@@ -15,8 +15,16 @@ pub trait Sampler: Sync + Send {
             r
         }
     }
+    fn get_distribution_1d_remap(&mut self, len: usize, f: &dyn Fn(usize) -> Float) -> (usize, Float, Float) {
+        sample_distribution_1d_remap(self.get_1d(), len, f)
+    }
+    fn get_usize_remap(&mut self, max: usize) -> (usize, Float) {
+        sample_usize_remap(self.get_1d(), max)
+    }
     fn get_usize(&mut self, max: usize) -> usize {
-        let r = (self.get_sample() * (max as Float)).trunc() as usize;
+        let f = self.get_sample() * (max as Float);
+        let f_trunc = f.trunc();
+        let r = f_trunc as usize;
         if r == max {
             max - 1
         } else {
@@ -37,9 +45,7 @@ pub trait Sampler: Sync + Send {
 
 impl ParseFromBlockSegment for Box<dyn Sampler> {
     type T = Box<dyn FnOnce(Vector2u) -> Box<dyn Sampler>>;
-    fn parse_from_segment(
-        segment: &BlockSegment,
-    ) -> Option<Self::T> {
+    fn parse_from_segment(segment: &BlockSegment) -> Option<Self::T> {
         let property_set = segment.get_object_by_type("Sampler")?;
         if property_set.get_name().unwrap() == "halton" {
             let pixel_samples = property_set.get_value("pixelsamples").unwrap();
@@ -51,4 +57,3 @@ impl ParseFromBlockSegment for Box<dyn Sampler> {
         }
     }
 }
-

@@ -45,7 +45,7 @@ pub fn uniform_sample_one_light(
         }
         if !light.is_delta() {
             // sample brdf
-            if let (wi, Some(f), f_pdf) = bsdf.sample_no_delta_f(&wo, sampler) {
+            if let (wi, Some(f), f_pdf) = bsdf.sample_no_delta_f(&wo, &sampler.get_2d()) {
                 trace!("Sample bsdf Get f {} pdf {}", f, f_pdf);
                 let ray = Ray::new_shape_point_d(&shape_point, wi.clone());
                 if let Some(intersect) = scene.intersect(&ray) {

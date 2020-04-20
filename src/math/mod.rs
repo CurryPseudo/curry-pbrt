@@ -56,8 +56,7 @@ pub fn gamma_correct(f: Float) -> Float {
 pub fn coordinate_system(z: &Vector3f) -> (Vector3f, Vector3f) {
     let x = if z.x.abs() > z.y.abs() {
         Vector3f::new(-z.z, 0., z.x) / (z.x * z.x + z.z * z.z).sqrt()
-    }
-    else {
+    } else {
         Vector3f::new(0., z.z, -z.y) / (z.y * z.y + z.z * z.z).sqrt()
     };
     (x, z.cross(&x))
@@ -66,6 +65,38 @@ pub fn coordinate_system(z: &Vector3f) -> (Vector3f, Vector3f) {
 pub fn gamma(n: Integer) -> Float {
     let n_machine_epsilon = n as Float * MACHINE_EPSILON;
     n_machine_epsilon / (1. - n_machine_epsilon)
+}
+
+pub fn sample_usize_remap(u: Float, len: usize) -> (usize, Float) {
+    let f = u * len as Float;
+    let trunc = f.trunc();
+    let remap = f - trunc;
+    (min(trunc as usize, len - 1), remap)
+
+}
+
+pub fn sample_distribution_1d_remap(
+    u: Float,
+    len: usize,
+    f: &dyn Fn(usize) -> Float,
+) -> (usize, Float, Float) {
+    assert!(len != 0);
+    if len == 1 {
+        return (0, 1., u);
+    }
+    let mut cdf: Vec<Float> = Vec::new();
+    for i in 0..len {
+        let x = f(i);
+        cdf.push(cdf.last().unwrap_or(&0.) + x);
+    }
+    let sum = cdf.last().unwrap();
+    for i in 0..len {
+        if u * sum <= cdf[i] {
+            let pdf = f(i) / sum;
+            return (i, pdf, (cdf[i] - u * sum) / f(i));
+        }
+    }
+    unreachable!()
 }
 pub const INV_PI: Float = 0.31830988618379067154;
 
