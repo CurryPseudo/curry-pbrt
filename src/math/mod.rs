@@ -72,7 +72,6 @@ pub fn sample_usize_remap(u: Float, len: usize) -> (usize, Float) {
     let trunc = f.trunc();
     let remap = f - trunc;
     (min(trunc as usize, len - 1), remap)
-
 }
 
 pub fn sample_distribution_1d_remap(
@@ -96,7 +95,7 @@ pub fn sample_distribution_1d_remap(
             return (i, pdf, (cdf[i] - u * sum) / f(i));
         }
     }
-    unreachable!()
+    (len - 1, f(len - 1) / sum, 1.)
 }
 pub const INV_PI: Float = 0.31830988618379067154;
 
