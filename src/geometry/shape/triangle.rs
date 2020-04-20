@@ -34,49 +34,63 @@ pub fn create_triangles(mesh: Arc<TriangleMesh>) -> Vec<Box<dyn Shape>> {
 pub struct Triangle {
     mesh: Arc<TriangleMesh>,
     index: usize,
+    v0: usize,
+    v1: usize,
+    v2: usize,
+    p0: Point3f,
+    p1: Point3f,
+    p2: Point3f,
+    n: Normal3f,
+    uv0: Point2f,
+    uv1: Point2f,
+    uv2: Point2f,
 }
 
 impl Triangle {
     pub fn new(mesh: Arc<TriangleMesh>, index: usize) -> Self {
-        Self { mesh, index }
-    }
-    pub fn indices(&self) -> (usize, usize, usize) {
-        (
-            self.mesh.indices[self.index],
-            self.mesh.indices[self.index + 1],
-            self.mesh.indices[self.index + 2],
-        )
-    }
-    pub fn vertices(&self) -> (Point3f, Point3f, Point3f) {
-        let (v1, v2, v3) = self.indices();
-        (
-            self.mesh.vertices[v1],
-            self.mesh.vertices[v2],
-            self.mesh.vertices[v3],
-        )
-    }
-    pub fn uv(&self) -> (Point2f, Point2f, Point2f) {
-        if let Some(uvs) = &self.mesh.uvs {
-            let (v1, v2, v3) = self.indices();
-            (uvs[v1], uvs[v2], uvs[v3])
+        let v0 = mesh.indices[index];
+        let v1 = mesh.indices[index + 1];
+        let v2 = mesh.indices[index + 2];
+        let p0 = mesh.vertices[v0];
+        let p1 = mesh.vertices[v1];
+        let p2 = mesh.vertices[v2];
+        let (uv0, uv1, uv2) = if let Some(uvs) = &mesh.uvs {
+            (uvs[v0], uvs[v1], uvs[v2])
         } else {
             (
                 Point2f::new(0., 0.),
                 Point2f::new(1., 0.),
                 Point2f::new(1., 1.),
             )
+        };
+        let (dp02, dp12) = (p0 - p2, p1 - p2);
+        let n = Normal3f::from(dp02.cross(&dp12).normalize());
+        Self {
+            mesh: mesh.clone(),
+            index,
+            v0,
+            v1,
+            v2,
+            p0,
+            p1,
+            p2,
+            uv0,
+            uv1,
+            uv2,
+            n
         }
     }
-    fn normal_interpolate(&self, b0: Float, b1: Float, b2: Float) -> Normal3f {
-        if let Some(normals) = &self.mesh.normals {
-            let (v0, v1, v2) = self.indices();
-            let (n0, n1, n2) = (*normals[v0], *normals[v1], *normals[v2]);
-            Normal3f::from(b0 * n0 + b1 * n1 + b2 * n2)
-        } else {
-            let (p0, p1, p2) = self.vertices();
-            let (dp02, dp12) = (p0 - p2, p1 - p2);
-            Normal3f::from(dp02.cross(&dp12).normalize())
-        }
+    pub fn indices(&self) -> (usize, usize, usize) {
+        (self.v0, self.v1, self.v2)
+    }
+    pub fn vertices(&self) -> (&Point3f, &Point3f, &Point3f) {
+        (&self.p0, &self.p1, &self.p2)
+    }
+    pub fn uv(&self) -> (&Point2f, &Point2f, &Point2f) {
+        (&self.uv0, &self.uv1, &self.uv2)
+    }
+    fn normal(&self) -> &Normal3f {
+        &self.n
     }
     fn uv_interpolate(&self, b0: Float, b1: Float, b2: Float) -> Point2f {
         let (uv0, uv1, uv2) = self.uv();
@@ -94,7 +108,7 @@ impl Triangle {
     ) -> (Point3f, Normal3f, Point2f) {
         (
             self.point_interpolate(b0, b1, b2),
-            self.normal_interpolate(b0, b1, b2),
+            *self.normal(),
             self.uv_interpolate(b0, b1, b2),
         )
     }
@@ -111,8 +125,8 @@ impl Shape for Triangle {
     }
     fn bound(&self) -> Bounds3f {
         let (p0, p1, p2) = self.vertices();
-        let mut bound = Bounds3f::new(&p0, &p1);
-        bound = bound | &p2;
+        let mut bound = Bounds3f::new(p0, p1);
+        bound = bound | p2;
         bound
     }
     fn sample(&self, sampler: &mut dyn Sampler) -> (ShapePoint, Float) {
@@ -180,13 +194,11 @@ impl Shape for Triangle {
         let delta_x = gamma(5) * (max_xt + max_zt);
         let delta_y = gamma(5) * (max_yt + max_zt);
 
-        let delta_e =
-            2. * (gamma(2) * max_xt * max_yt + delta_y * max_xt + delta_x * max_yt);
+        let delta_e = 2. * (gamma(2) * max_xt * max_yt + delta_y * max_xt + delta_x * max_yt);
         let max_e = Vector3f::new(e0, e1, e2).abs().max();
 
-        let delta_t = 3.
-            * (gamma(3) * max_e * max_zt + delta_e * max_zt + delta_z * max_e)
-            * inv_det.abs();
+        let delta_t =
+            3. * (gamma(3) * max_e * max_zt + delta_e * max_zt + delta_z * max_e) * inv_det.abs();
         if t <= delta_t {
             return None;
         }

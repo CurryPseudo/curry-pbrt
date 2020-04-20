@@ -7,3 +7,4 @@ flame.*
 perf.*
 .err
 test
+*.profile
