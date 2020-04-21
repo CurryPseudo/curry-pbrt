@@ -1,13 +1,13 @@
 LookAt 278 273 -800  278 273 0   0 1 0
 Camera "perspective" "float fov" [37.5]
-Sampler "halton" "integer pixelsamples" [16]
+Sampler "halton" "integer pixelsamples" [64]
 Film "image"
    "string filename" ["image/cornell_test.png"]
-   "integer xresolution" [1600]
-   "integer yresolution" [1600]
+   "integer xresolution" [900]
+   "integer yresolution" [900]
 
 # Integrator "directlighting" "integer maxdepth" [2] 
-Integrator "path" "integer maxdepth" [1]
+Integrator "path" "integer maxdepth" [5]
 
 
 WorldBegin
@@ -20,9 +20,9 @@ AttributeBegin
    Material "matte"
    "spectrum Kd" [400.0 0.0 500.0 8.0 600.0 15.6 700.0 18.4]
 
-   Translate 278 548.7 279.5
-   Shape "sphere" "float radius" [60]
-   # Shape "trianglemesh"
+   # Translate 278 548.7 279.5
+   # Shape "sphere" "float radius" [60]
+   Shape "trianglemesh"
    "integer indices" [ 0 1 2  2 3 0 ]
    "point P" [
       343.0 548.7 227.0

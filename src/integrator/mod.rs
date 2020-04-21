@@ -38,6 +38,10 @@ pub fn uniform_sample_one_light(
                                     li * f * n.dot(&wi).abs() * power_heuristic(li_pdf, f_pdf)
                                         / li_pdf
                                 };
+                                if ld.has_nan() {
+                                    debug!("li_pdf {}", li_pdf);
+                                    debug!("f_pdf {}", f_pdf);
+                                }
                                 l += ld;
                             }
                             trace!("Sample light Get f {} {}", f, f_pdf);
@@ -65,6 +69,10 @@ pub fn uniform_sample_one_light(
                                             * n.dot(&wi).abs()
                                             * power_heuristic(f_pdf, li_pdf)
                                             / f_pdf;
+                                        if ld.has_nan() {
+                                            debug!("li_pdf {}", li_pdf);
+                                            debug!("f_pdf {}", f_pdf);
+                                        }
                                         l += ld;
                                     }
                                 }
@@ -76,6 +84,9 @@ pub fn uniform_sample_one_light(
         }
     }
     l *= lights.len() as Float;
+    if l.has_nan() {
+        debug!("uniform sample one light has nan");
+    }
     l
 }
 impl ParseFromBlockSegment for Box<dyn Integrator> {

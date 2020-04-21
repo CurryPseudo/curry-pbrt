@@ -12,8 +12,10 @@ pub fn render(
     camera: Box<dyn Camera>,
 ) -> Film {
     let film_tiles = film.gen_tiles();
-    let progress_bar = ProgressBar::new(film_tiles.len() as u64);
-    progress_bar.set_style(ProgressStyle::default_bar().template("{bar} ({eta})"));
+    let len = film_tiles.len() as u64;
+    let progress_bar = ProgressBar::new(len);
+    progress_bar.set_style(ProgressStyle::default_bar().template("{wide_bar} {percent}% ({eta_precise})"));
+    progress_bar.enable_steady_tick(1000);
     let film = Mutex::new(film);
     film_tiles.into_par_iter().for_each(|mut tile| {
         //film_tiles.into_iter().for_each(|mut tile| {
@@ -31,6 +33,7 @@ pub fn render(
                 let li = integrator.li(&ray, &scene, sampler.as_mut());
                 if li.has_nan() {
                     warn!("li has nan at pixel {} sample {}", film_point, _i);
+                    warn!("");
                 }
                 samples.push((offset, li));
                 sampler.next_sample();
