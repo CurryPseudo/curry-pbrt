@@ -65,7 +65,9 @@ pub fn render_from_file(path: &Path) {
     }
     let sampler = sampler_factory(resolution);
     let integrator = parse_find_eat::<Box<dyn Integrator>>(&mut segments).unwrap();
-    let scene = parse_find_eat::<Scene>(&mut segments).unwrap();
+    let aggregate = Box::new(PlainAggregate::default());
+    let mut scene = parse_find_eat::<Scene>(&mut segments).unwrap();
+    scene.build_aggregate(aggregate);
     let film = render(scene, sampler, integrator, film, camera);
     film.write_image(&Path::new(file_name.as_str()));
     println!("{}", file_name);

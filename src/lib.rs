@@ -37,3 +37,5 @@ pub mod spectrum;
 pub use spectrum::*;
 pub mod texture;
 pub use texture::*;
+pub mod aggregate;
+pub use aggregate::*;

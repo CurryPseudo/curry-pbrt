@@ -5,42 +5,21 @@ use std::sync::Arc;
 pub struct Scene {
     lights: Vec<Arc<dyn Light>>,
     materials: Vec<Arc<dyn Material>>,
-    primitives: Vec<Primitive>,
+    aggregate: AggregateBuilder,
 }
 
 impl Scene {
     pub fn intersect_predicate(&self, ray: &Ray) -> bool {
-        let ray = RayIntersectCache::from(*ray);
-        for primitive in &self.primitives {
-            if primitive.intersect_predicate_through_bound(&ray) {
-                //if primitive.intersect_predicate(&ray) {
-                return true;
-            }
-        }
-        false
+        self.aggregate.get().intersect_predicate(ray)
     }
     pub fn intersect(&self, ray: &Ray) -> Option<PrimitiveIntersect> {
-        let mut intersect: Option<PrimitiveIntersect> = None;
-        let ray = RayIntersectCache::from(*ray);
-        for primitive in &self.primitives {
-            let this_intersect = primitive.intersect_through_bound(&ray);
-            //let this_intersect = primitive.intersect(&ray);
-            if let Some(intersect) = &mut intersect {
-                if let Some(this_intersect) = this_intersect {
-                    if this_intersect.get_shape_intersect().get_t()
-                        < intersect.get_shape_intersect().get_t()
-                    {
-                        *intersect = this_intersect
-                    }
-                }
-            } else {
-                intersect = this_intersect;
-            }
-        }
-        intersect
+        self.aggregate.get().intersect(&ray)
     }
     pub fn get_lights(&self) -> &[Arc<dyn Light>] {
         &self.lights
+    }
+    pub fn build_aggregate(&mut self, aggregate: Box<dyn Aggregate>) {
+        self.aggregate.build(aggregate);
     }
     pub fn parse_segment(
         &mut self,
@@ -83,7 +62,7 @@ impl Scene {
                     } else {
                         Primitive::new(shape, PrimitiveSource::material(material.clone().unwrap()))
                     };
-                    self.primitives.push(primitive);
+                    self.aggregate.add_primitive(primitive);
                 }
             }
             "LightSource" => {
