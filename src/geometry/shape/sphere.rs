@@ -64,7 +64,7 @@ impl Shape for Sphere {
     fn sample_by_point(&self, point: &Point3f, sampler: &mut dyn Sampler) -> (ShapePoint, Float) {
         let distance_2 = point.coords.magnitude_squared();
         let radius_2 = self.radius * self.radius;
-        if distance_2 < radius_2 {
+        if distance_2 <= radius_2 {
             return self.default_sample_by_point(point, sampler);
         }
         let distance = distance_2.sqrt();
@@ -74,13 +74,13 @@ impl Shape for Sphere {
         let u = sampler.get_2d();
 
         let sin_theta_max_2 = radius_2 / distance_2;
-        let cos_theta_max = (1. - sin_theta_max_2).sqrt();
+        let cos_theta_max = max(1. - sin_theta_max_2, 0.).sqrt();
         let cos_theta = (1. - u.x) + u.x * cos_theta_max;
-        let sin_theta = (1. - cos_theta * cos_theta).sqrt();
+        let sin_theta = max(1. - cos_theta * cos_theta, 0.).sqrt();
         let phi = u.y * 2. * PI;
-        let ds = distance * cos_theta - (radius_2 - distance_2 * sin_theta * sin_theta).sqrt();
+        let ds = distance * cos_theta - max(radius_2 - distance_2 * sin_theta * sin_theta, 0.).sqrt();
         let cos_alpha = (distance_2 + radius_2 - ds * ds) / (2. * distance * self.radius);
-        let sin_alpha = (1. - cos_alpha * cos_alpha).sqrt();
+        let sin_alpha = max(1. - cos_alpha * cos_alpha, 0.).sqrt();
 
         let d = cos_alpha * z + sin_alpha * phi.cos() * x + sin_alpha * phi.sin() * y;
         let n = Normal3f::from(d);

@@ -24,11 +24,14 @@ pub fn render(
             let mut film_point_f = Point2f::new(film_point.x as Float, film_point.y as Float);
             let sample_per_pixel = sampler.get_sample_per_pixel();
             let mut samples = Vec::new();
-            for _ in 0..sample_per_pixel {
+            for _i in 0..sample_per_pixel {
                 let offset = sampler.get_2d() - Point2f::new(0.5, 0.5);
                 film_point_f += offset;
                 let ray = camera.generate_ray(film_point_f);
                 let li = integrator.li(&ray, &scene, sampler.as_mut());
+                if li.has_nan() {
+                    warn!("li has nan at pixel {} sample {}", film_point, _i);
+                }
                 samples.push((offset, li));
                 sampler.next_sample();
             }

@@ -98,18 +98,6 @@ impl BSDF {
             delta_bxdfs: Vec::new(),
         }
     }
-    fn average_general<A: Fn(&dyn BxDF, &mut T), D: Fn(&mut T, Float), T>(
-        &self,
-        a: A,
-        d: D,
-        mut t: T,
-    ) -> T {
-        for bxdf in &self.bxdfs {
-            a(bxdf.as_ref(), &mut t);
-        }
-        d(&mut t, self.bxdfs.len() as Float);
-        t
-    }
     fn local_to_world(&self, w: &Vector3f) -> Vector3f {
         let snx = &self.snx;
         let sny = &self.sny;
@@ -187,25 +175,21 @@ impl BSDF {
         let (wi_local, f) = wi_f[i];
         (self.local_to_world(&wi_local), Some(f), pdf)
     }
-    pub fn f_pdf(&self, wo: &Vector3f, wi: &Vector3f) -> (Option<Spectrum>, Float) {
+    pub fn no_delta_f_pdf(&self, wo: &Vector3f, wi: &Vector3f) -> (Option<Spectrum>, Float) {
         if self.bxdfs.is_empty() {
             return (None, 0.);
         }
         let wo = self.world_to_local(wo);
         let wi = self.world_to_local(wi);
-        let (f, pdf) = self.average_general(
-            |bxdf, (f, pdf)| {
-                let (this_f, this_pdf) = bxdf.f_pdf(&wo, &wi);
-                *f += this_f;
-                *pdf += this_pdf
-            },
-            |(f, pdf), len| {
-                *f /= len;
-                *pdf /= len;
-            },
-            (Spectrum::default(), 0.),
-        );
-        (f.to_option(), pdf)
+        let mut f = None;
+        let mut pdf = 0.;
+        for bxdf in &self.bxdfs {
+            if let (Some(this_f), this_pdf) = bxdf.f_pdf(&wo, &wi) {
+                f = Some(f.unwrap_or(Spectrum::new(0.)) + this_f);
+                pdf += this_pdf;
+            }
+        }
+        (f, pdf)
     }
     pub fn sample_f(
         &self,

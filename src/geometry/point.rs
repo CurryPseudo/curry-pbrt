@@ -60,3 +60,9 @@ pub fn uniform_sample_triangle(u: Point2f) -> Point2f {
     Point2f::new(1. - su0, u.y * su0)
 }
 
+pub fn has_nan(p: &Point3f) -> bool {
+    if p.x.is_nan() || p.y.is_nan() || p.z.is_nan() {
+        return true
+    }
+    false
+}
