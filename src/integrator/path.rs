@@ -49,6 +49,9 @@ impl Integrator for PathIntegrator {
                                 if sampler.get_1d() < q {
                                     break;
                                 }
+                                if 1. - q == 0. {
+                                    debug!("1 - q get 0");
+                                }
                                 beta /= 1. - q;
                             }
                             bounce += 1;

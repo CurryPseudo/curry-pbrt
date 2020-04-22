@@ -28,7 +28,7 @@ pub trait Shape: DowncastSync {
             (shape_point, 0.)
         } else {
             let pdf = pdf * wi.magnitude_squared() / -wi.normalize().dot(&shape_point.n);
-            if pdf.is_nan() {
+            if pdf.is_nan() || pdf.is_infinite() {
                 (shape_point, 0.)
             } else {
                 (shape_point, pdf)
@@ -39,7 +39,13 @@ pub trait Shape: DowncastSync {
         let d = point - shape_point.p;
         let distance_2 = d.magnitude_squared();
         let distance = distance_2.sqrt();
-        distance_2 / ((d / distance).dot(&shape_point.n).abs() * self.area())
+        let pdf = distance_2 / ((d / distance).dot(&shape_point.n).abs() * self.area());
+        if pdf.is_nan() || pdf.is_infinite() {
+            0.
+        }
+        else {
+            pdf
+        }
     }
     fn by_point_pdf(&self, point: &Point3f, shape_point: &ShapePoint) -> Float {
         self.default_by_point_pdf(point, shape_point)

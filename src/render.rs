@@ -12,8 +12,10 @@ pub fn render(
     camera: Box<dyn Camera>,
 ) -> Film {
     let film_tiles = film.gen_tiles();
-    let progress_bar = ProgressBar::new(film_tiles.len() as u64);
-    progress_bar.set_style(ProgressStyle::default_bar().template("{bar} ({eta})"));
+    let len = film_tiles.len() as u64;
+    let progress_bar = ProgressBar::new(len);
+    progress_bar.set_style(ProgressStyle::default_bar().template("{wide_bar} {percent}% ({eta_precise})"));
+    progress_bar.enable_steady_tick(1000);
     let film = Mutex::new(film);
     film_tiles.into_par_iter().for_each(|mut tile| {
         //film_tiles.into_iter().for_each(|mut tile| {
@@ -24,12 +26,18 @@ pub fn render(
             let mut film_point_f = Point2f::new(film_point.x as Float, film_point.y as Float);
             let sample_per_pixel = sampler.get_sample_per_pixel();
             let mut samples = Vec::new();
-            for _ in 0..sample_per_pixel {
+            for _i in 0..sample_per_pixel {
                 let offset = sampler.get_2d() - Point2f::new(0.5, 0.5);
                 film_point_f += offset;
                 let ray = camera.generate_ray(film_point_f);
                 let li = integrator.li(&ray, &scene, sampler.as_mut());
-                samples.push((offset, li));
+                if li.has_nan() {
+                    warn!("li has nan at pixel {} sample {}", film_point, _i);
+                    warn!("");
+                }
+                else {
+                    samples.push((offset, li));
+                }
                 sampler.next_sample();
             }
             tile.add_samples(&film_point, &samples);

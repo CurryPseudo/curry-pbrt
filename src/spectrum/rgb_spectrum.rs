@@ -33,6 +33,9 @@ impl RGBSpectrum {
     pub fn is_black(&self) -> bool {
         self.0[0] == 0. && self.0[1] == 0. && self.0[2] == 0.
     }
+    pub fn has_nan(&self) -> bool {
+        self.0[0].is_nan() || self.0[1].is_nan()|| self.0[2].is_nan()
+    }
     pub fn to_option(self) -> Option<Self> {
         if self.is_black() {
             None
@@ -188,7 +191,6 @@ impl ParseFromProperty for RGBSpectrum {
             }
             "spectrum" => {
                 let sampled = Vec::parse_from_property(type_name, basic_type);
-                debug!("{:?}", sampled);
                 RGBSpectrum::from_sampled(sampled)
             }
             _ => Self::parse_default(),

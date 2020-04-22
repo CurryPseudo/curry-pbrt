@@ -27,18 +27,25 @@ pub fn uniform_sample_one_light(
             if let (wi, Some(li), li_pdf, visibility_tester) =
                 light.sample_li(&shape_point, sampler)
             {
-                trace!("Sample light Get li {} pdf {}", li, li_pdf);
-                if let (Some(f), f_pdf) = bsdf.f_pdf(&wo, &wi) {
-                    if f_pdf != 0. {
-                        if visibility_tester.unoccluded(scene) {
-                            if light.is_delta() {
-                                l += li * f * n.dot(&wi).abs() / li_pdf;
-                            } else {
-                                l += li * f * n.dot(&wi).abs() * power_heuristic(li_pdf, f_pdf)
-                                    / li_pdf;
+                if li_pdf != 0. {
+                    trace!("Sample light Get li {} pdf {}", li, li_pdf);
+                    if let (Some(f), f_pdf) = bsdf.no_delta_f_pdf(&wo, &wi) {
+                        if f_pdf != 0. {
+                            if visibility_tester.unoccluded(scene) {
+                                let ld = if light.is_delta() {
+                                    li * f * n.dot(&wi).abs() / li_pdf
+                                } else {
+                                    li * f * n.dot(&wi).abs() * power_heuristic(li_pdf, f_pdf)
+                                        / li_pdf
+                                };
+                                if ld.has_nan() {
+                                    debug!("li_pdf {}", li_pdf);
+                                    debug!("f_pdf {}", f_pdf);
+                                }
+                                l += ld;
                             }
+                            trace!("Sample light Get f {} {}", f, f_pdf);
                         }
-                        trace!("Sample light Get f {} {}", f, f_pdf);
                     }
                 }
             }
@@ -47,16 +54,28 @@ pub fn uniform_sample_one_light(
             // sample brdf
             if let (wi, Some(f), f_pdf) = bsdf.sample_no_delta_f(&wo, &sampler.get_2d()) {
                 trace!("Sample bsdf Get f {} pdf {}", f, f_pdf);
-                let ray = Ray::new_shape_point_d(&shape_point, wi.clone());
-                if let Some(intersect) = scene.intersect(&ray) {
-                    if let Some(intersect_light) = intersect.get_light() {
-                        if Arc::ptr_eq(light, &intersect_light) {
-                            if let (Some(li), li_pdf) = light
-                                .le_pdf(&point, intersect.get_shape_point())
-                            {
-                                trace!("Sample bsdf Get li {} pdf {}", li, f_pdf);
-                                l += li * f * n.dot(&wi).abs() * power_heuristic(f_pdf, li_pdf)
-                                    / f_pdf;
+                if f_pdf != 0. {
+                    let ray = Ray::new_shape_point_d(&shape_point, wi.clone());
+                    if let Some(intersect) = scene.intersect(&ray) {
+                        if let Some(intersect_light) = intersect.get_light() {
+                            if Arc::ptr_eq(light, &intersect_light) {
+                                if let (Some(li), li_pdf) =
+                                    light.le_pdf(&point, intersect.get_shape_point())
+                                {
+                                    if li_pdf != 0. {
+                                        trace!("Sample bsdf Get li {} pdf {}", li, f_pdf);
+                                        let ld = li
+                                            * f
+                                            * n.dot(&wi).abs()
+                                            * power_heuristic(f_pdf, li_pdf)
+                                            / f_pdf;
+                                        if ld.has_nan() {
+                                            debug!("li_pdf {}", li_pdf);
+                                            debug!("f_pdf {}", f_pdf);
+                                        }
+                                        l += ld;
+                                    }
+                                }
                             }
                         }
                     }
@@ -65,6 +84,9 @@ pub fn uniform_sample_one_light(
         }
     }
     l *= lights.len() as Float;
+    if l.has_nan() {
+        debug!("uniform sample one light has nan");
+    }
     l
 }
 impl ParseFromBlockSegment for Box<dyn Integrator> {
@@ -84,4 +106,3 @@ impl ParseFromBlockSegment for Box<dyn Integrator> {
         }
     }
 }
-

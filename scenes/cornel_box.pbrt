@@ -20,9 +20,9 @@ AttributeBegin
    Material "matte"
    "spectrum Kd" [400.0 0.0 500.0 8.0 600.0 15.6 700.0 18.4]
 
-   Translate 278 548.7 279.5
-   Shape "sphere" "float radius" [60]
-   # Shape "trianglemesh"
+   # Translate 278 548.7 279.5
+   # Shape "sphere" "float radius" [60]
+   Shape "trianglemesh"
    "integer indices" [ 0 1 2  2 3 0 ]
    "point P" [
       343.0 548.7 227.0
