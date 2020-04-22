@@ -324,6 +324,12 @@ impl RayIntersectCache {
     pub fn origin_ray(&self) -> &Ray {
         &self.ray
     }
+    pub fn update_t_max(&mut self, t_max: Float) {
+        self.ray.t_max = t_max;
+    }
+    pub fn get_t_max(&self) -> Float {
+        self.ray.t_max
+    }
 }
 
 impl From<Ray> for RayIntersectCache {

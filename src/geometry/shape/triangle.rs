@@ -185,7 +185,7 @@ impl Shape for Triangle {
         let inv_det = 1. / det;
         let (b0, b1, b2) = (e0 * inv_det, e1 * inv_det, e2 * inv_det);
         let t = t_scaled * inv_det;
-
+        
         let max_zt = Vector3f::new(p0t.z, p1t.z, p2t.z).abs().max();
         let delta_z = gamma(3) * max_zt;
 

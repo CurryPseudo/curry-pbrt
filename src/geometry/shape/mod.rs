@@ -88,7 +88,7 @@ pub fn shape_apply(shape: Box<dyn Shape>, transform: &Transform) -> Box<dyn Shap
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct ShapePoint {
     pub p: Point3f,
     pub n: Normal3f,
@@ -116,7 +116,7 @@ impl ShapePoint {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct ShapeIntersect {
     t: Float,
     p: ShapePoint,

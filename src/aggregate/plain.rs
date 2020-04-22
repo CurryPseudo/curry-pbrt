@@ -16,15 +16,16 @@ impl Aggregate for PlainAggregate {
     }
     fn intersect(&self, ray: &Ray) -> Option<PrimitiveIntersect> {
         let mut intersect: Option<PrimitiveIntersect> = None;
-        let ray = RayIntersectCache::from(*ray);
+        let mut ray = RayIntersectCache::from(*ray);
         for primitive in &self.primitives {
             let this_intersect = primitive.intersect_through_bound(&ray);
             if let Some(intersect) = &mut intersect {
                 if let Some(this_intersect) = this_intersect {
+                    ray.update_t_max(this_intersect.get_shape_intersect().get_t());
                     if this_intersect.get_shape_intersect().get_t()
                         < intersect.get_shape_intersect().get_t()
                     {
-                        *intersect = this_intersect
+                        *intersect = this_intersect;
                     }
                 }
             } else {
