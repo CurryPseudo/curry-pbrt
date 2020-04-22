@@ -35,7 +35,9 @@ pub fn render(
                     warn!("li has nan at pixel {} sample {}", film_point, _i);
                     warn!("");
                 }
-                samples.push((offset, li));
+                else {
+                    samples.push((offset, li));
+                }
                 sampler.next_sample();
             }
             tile.add_samples(&film_point, &samples);
