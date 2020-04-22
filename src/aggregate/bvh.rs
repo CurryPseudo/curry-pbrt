@@ -1,22 +1,11 @@
 use crate::*;
 use ordered_float::OrderedFloat;
 use std::ops::Range;
+#[derive(Default)]
 pub struct BVHAggregate {
-    leaf_max_primitive: usize,
     primitives: Vec<Primitive>,
     nodes: Vec<BVHNode>,
     root: usize,
-}
-
-impl BVHAggregate {
-    pub fn new(leaf_max_primitive: usize) -> Self {
-        Self {
-            leaf_max_primitive,
-            primitives: Vec::new(),
-            nodes: Vec::new(),
-            root: 0,
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -34,7 +23,7 @@ impl BVHAggregate {
     fn create_sah_node(&mut self, range: Range<usize>) -> usize {
         let len = range.end - range.start;
         assert!(len > 0);
-        if len <= self.leaf_max_primitive {
+        if len <= 1 {
             let r = self.nodes.len();
             self.nodes.push(BVHNode::Leaf(range));
             return r;
@@ -51,7 +40,6 @@ impl BVHAggregate {
             full_bound.unwrap()
         };
         let start = range.start;
-        drop(range);
         let mut min_cost: Option<(Float, Vec<usize>, usize, usize)> = None;
         for axis in 0..3 {
             let mut sort_by_axis_index: Vec<usize> = (0..len).collect();
@@ -94,32 +82,27 @@ impl BVHAggregate {
                 }
             }
         }
-        let (_, min_sorted_indices, min_axis, min_i) = min_cost.unwrap();
+        let (min_cost, min_sorted_indices, min_axis, min_i) = min_cost.unwrap();
+        if min_cost > len as Float {
+            // construct leaf
+            let r = self.nodes.len();
+            self.nodes.push(BVHNode::Leaf(range));
+            debug!("leaf has {} node", len);
+            return r;
+        }
         let mut swapped = vec![false; len];
-        let mut test: Vec<usize> = (0..len).collect();
         for i in 0..len {
             if !swapped[i] {
                 let mut j = i;
                 let mut k = min_sorted_indices[j];
                 while k != i {
                     self.primitives.swap(j + start, k + start);
-                    test.swap(j, k);
                     swapped[k] = true;
                     j = k;
                     k = min_sorted_indices[k];
                 }
             }
         }
-        assert_eq!(test, min_sorted_indices);
-        info!("partition by axis {}", min_axis);
-        info!("partition by i {}", min_i + 1);
-        info!("after sort, center is {:#?}", {
-            let mut centers = Vec::new();
-            for i in 0..len {
-                centers.push(self.primitives[i + start].bound().center());
-            }
-            centers
-        });
         let left = self.create_sah_node(start..start + min_i + 1);
         let right = self.create_sah_node(start + min_i + 1..start + len);
         let node = BVHNode::Parent {
