@@ -9,7 +9,7 @@ use nalgebra::{
 use num_traits::{Bounded, FromPrimitive};
 use std::{
     fmt::Display,
-    ops::{BitAnd, BitOr, Index, BitOrAssign},
+    ops::{BitAnd, BitOr, BitOrAssign, Index},
 };
 
 pub trait BoundsTrait:
@@ -303,37 +303,23 @@ impl Bounds3f {
     pub fn intersect_predicate(&self, ray: &Ray) -> bool {
         self.intersect_predicate_cached(&RayIntersectCache::from(ray.clone()))
     }
-    fn intersect_component(&self, ray: &RayIntersectCache, c: usize) -> Option<(Float, Float)> {
-        if ray.ray.d[c] == 0. {
-            None
-        } else {
-            Some((
-                (self[ray.is_negative_d[c]][c] - ray.ray.o[c]) * ray.inverse_d[c],
-                (self[ray.is_positive_d[c]][c] - ray.ray.o[c]) * ray.inverse_d[c],
-            ))
-        }
+    fn intersect_component(&self, ray: &RayIntersectCache, c: usize) -> (Float, Float) {
+        (
+            (self[ray.is_negative_d[c]][c] - ray.ray.o[c]) * ray.inverse_d[c],
+            (self[ray.is_positive_d[c]][c] - ray.ray.o[c]) * ray.inverse_d[c] * (1. + 2. * gamma(3)),
+        )
     }
     pub fn intersect_predicate_cached(&self, ray: &RayIntersectCache) -> bool {
-        let mut pair = None;
-        for i in 0..3 {
-            if let Some((t_min, t_max)) = &mut pair {
-                if let Some((t_next_min, mut t_next_max)) = self.intersect_component(ray, i) {
-                    t_next_max *= 1. + 2. * gamma(3);
-                    if *t_min > t_next_max || t_next_min > *t_max {
-                        return false;
-                    }
-                    *t_min = min(*t_min, t_next_min);
-                    *t_max = max(*t_max, t_next_max);
-                }
-            } else {
-                pair = self.intersect_component(ray, i);
+        let (mut t_min, mut t_max) = self.intersect_component(ray, 0);
+        for i in 1..3 {
+            let (t_next_min, t_next_max) = self.intersect_component(ray, i);
+            if t_min > t_next_max || t_next_min > t_max {
+                return false;
             }
+            t_min = min(t_min, t_next_min);
+            t_max = max(t_max, t_next_max);
         }
-        if let Some((t_min, t_max)) = pair {
-            t_min < ray.ray.t_max && t_max > 0.
-        } else {
-            false
-        }
+        t_min < ray.ray.t_max && t_max > 0.
     }
 }
 

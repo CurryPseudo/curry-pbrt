@@ -136,6 +136,73 @@ impl Shape for Triangle {
         let p_error = gamma(6) * self.abs_sum(b0, b1, b2);
         (ShapePoint::new(p, n, uv, p_error), 1. / self.area())
     }
+    fn intersect_predicate(&self, ray: &Ray) -> bool {
+        let (p0, p1, p2) = self.vertices();
+        let o = ray.o;
+        let (mut p0t, mut p1t, mut p2t) = (
+            Point3f::from(p0 - o),
+            Point3f::from(p1 - o),
+            Point3f::from(p2 - o),
+        );
+        let kz = ray.d.abs().imax();
+        let kx = if kz + 1 == 3 { 0 } else { kz + 1 };
+
+        let ky = if kx + 1 == 3 { 0 } else { kx + 1 };
+        let d = permute(ray.d, kx, ky, kz);
+        p0t = permute(p0t, kx, ky, kz);
+        p1t = permute(p1t, kx, ky, kz);
+        p2t = permute(p2t, kx, ky, kz);
+        let sx = -d.x / d.z;
+        let sy = -d.y / d.z;
+        let sz = 1. / d.z;
+        p0t.x += sx * p0t.z;
+        p0t.y += sy * p0t.z;
+        p1t.x += sx * p1t.z;
+        p1t.y += sy * p1t.z;
+        p2t.x += sx * p2t.z;
+        p2t.y += sy * p2t.z;
+        let (e0, e1, e2) = (
+            p1t.x * p2t.y - p1t.y * p2t.x,
+            p2t.x * p0t.y - p2t.y * p0t.x,
+            p0t.x * p1t.y - p0t.y * p1t.x,
+        );
+        if (e0 < 0. || e1 < 0. || e2 < 0.) && (e0 > 0. || e1 > 0. || e2 > 0.) {
+            return false;
+        }
+        let det = e0 + e1 + e2;
+        if det == 0. {
+            return false;
+        }
+        p0t.z *= sz;
+        p1t.z *= sz;
+        p2t.z *= sz;
+        let t_scaled = e0 * p0t.z + e1 * p1t.z + e2 * p2t.z;
+        if det < 0. && (t_scaled >= 0. || t_scaled < ray.t_max * det) {
+            return false;
+        } else if det > 0. && (t_scaled <= 0. || t_scaled > ray.t_max * det) {
+            return false;
+        }
+        let inv_det = 1. / det;
+        let t = t_scaled * inv_det;
+        
+        let max_zt = Vector3f::new(p0t.z, p1t.z, p2t.z).abs().max();
+        let delta_z = gamma(3) * max_zt;
+
+        let max_xt = Vector3f::new(p0t.x, p1t.x, p2t.x).abs().max();
+        let max_yt = Vector3f::new(p0t.y, p1t.y, p2t.y).abs().max();
+        let delta_x = gamma(5) * (max_xt + max_zt);
+        let delta_y = gamma(5) * (max_yt + max_zt);
+
+        let delta_e = 2. * (gamma(2) * max_xt * max_yt + delta_y * max_xt + delta_x * max_yt);
+        let max_e = Vector3f::new(e0, e1, e2).abs().max();
+
+        let delta_t =
+            3. * (gamma(3) * max_e * max_zt + delta_e * max_zt + delta_z * max_e) * inv_det.abs();
+        if t <= delta_t {
+            return false;
+        }
+        true
+    }
     fn intersect(&self, ray: &Ray) -> Option<ShapeIntersect> {
         let (p0, p1, p2) = self.vertices();
         let o = ray.o;
