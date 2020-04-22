@@ -197,6 +197,7 @@ dependencies = [
  "log",
  "nalgebra",
  "num-traits",
+ "ordered-float",
  "png",
  "pretty_env_logger",
  "rand",
@@ -466,6 +467,15 @@ name = "number_prefix"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "17b02fc0ff9a9e4b35b3342880f48e896ebf69f2967921fe8646bf5b7125956a"
+
+[[package]]
+name = "ordered-float"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18869315e81473c951eb56ad5558bbc56978562d3ecfb87abb7a1e944cea4518"
+dependencies = [
+ "num-traits",
+]
 
 [[package]]
 name = "pkg-config"

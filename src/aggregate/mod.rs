@@ -1,6 +1,8 @@
 use crate::*;
 mod plain;
+mod bvh;
 pub use plain::*;
+pub use bvh::*;
 use std::mem;
 
 pub trait Aggregate: Sync {

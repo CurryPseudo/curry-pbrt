@@ -73,7 +73,7 @@ pub fn render_from_file(path: &Path) {
     }
     let sampler = sampler_factory(resolution);
     let integrator = parse_find_eat::<Box<dyn Integrator>>(&mut segments).unwrap();
-    let aggregate = Box::new(PlainAggregate::default());
+    let aggregate = Box::new(BVHAggregate::new(2));
     let mut scene = parse_find_eat::<Scene>(&mut segments).unwrap();
     scene.build_aggregate(aggregate);
     let film = render(scene, sampler, integrator, film, camera);

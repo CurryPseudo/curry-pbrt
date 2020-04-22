@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct Primitive {
+    bound: Bounds3f,
     shape: Arc<dyn Shape>,
     source: PrimitiveSource,
 }
@@ -38,7 +39,8 @@ impl PrimitiveSource {
 
 impl Primitive {
     pub fn new(shape: Arc<dyn Shape>, source: PrimitiveSource) -> Self {
-        Self { shape, source }
+        let bound = shape.bound();
+        Self { shape, source, bound }
     }
 
     pub fn intersect_predicate(&self, ray: &Ray) -> bool {
@@ -54,6 +56,9 @@ impl Primitive {
     pub fn intersect_through_bound(&self, ray: &RayIntersectCache) -> Option<PrimitiveIntersect> {
         let shape_intersect = self.shape.intersect_through_bound(ray)?;
         Some(PrimitiveIntersect::new(shape_intersect, self.clone()))
+    }
+    pub fn bound(&self) -> &Bounds3f {
+        &self.bound
     }
 }
 pub struct PrimitiveIntersect {

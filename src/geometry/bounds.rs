@@ -9,7 +9,7 @@ use nalgebra::{
 use num_traits::{Bounded, FromPrimitive};
 use std::{
     fmt::Display,
-    ops::{BitAnd, BitOr, Index},
+    ops::{BitAnd, BitOr, Index, BitOrAssign},
 };
 
 pub trait BoundsTrait:
@@ -50,7 +50,10 @@ where
             min_p[i] = min(min_p[i], p2[i]);
             max_p[i] = max(max_p[i], p2[i]);
         }
-        Self{min: min_p, max: max_p}
+        Self {
+            min: min_p,
+            max: max_p,
+        }
     }
     pub fn corner(&self, index: usize) -> Point<T, N> {
         let dim = N::dim();
@@ -63,6 +66,9 @@ where
     }
     pub fn diagonal(&self) -> Vector<T, N> {
         &self.max - &self.min
+    }
+    pub fn center(&self) -> Point<T, N> {
+        self.min.clone() + self.diagonal() / T::from_f32(2.).unwrap()
     }
     pub fn maximum_extent(&self) -> usize {
         self.diagonal().imax()
@@ -129,7 +135,10 @@ where
     DefaultAllocator: Allocator<T, N>,
 {
     fn from(p: Point<T, N>) -> Self {
-        Self{min: p.clone(), max: p}
+        Self {
+            min: p.clone(),
+            max: p,
+        }
     }
 }
 impl<T: BoundsTrait, N: DimName> Default for Bounds<T, N>
@@ -186,6 +195,31 @@ where
             self.max[i] = max(self.max[i], rhs.max[i]);
         }
         self
+    }
+}
+impl<T: BoundsTrait, N: DimName> BitOrAssign<Self> for Bounds<T, N>
+where
+    DefaultAllocator: Allocator<T, N>,
+{
+    fn bitor_assign(&mut self, rhs: Self) {
+        let dim = N::dim();
+        for i in 0..dim {
+            self.min[i] = min(self.min[i], rhs.min[i]);
+            self.max[i] = max(self.max[i], rhs.max[i]);
+        }
+    }
+}
+
+impl<T: BoundsTrait, N: DimName> BitOrAssign<&Self> for Bounds<T, N>
+where
+    DefaultAllocator: Allocator<T, N>,
+{
+    fn bitor_assign(&mut self, rhs: &Self) {
+        let dim = N::dim();
+        for i in 0..dim {
+            self.min[i] = min(self.min[i], rhs.min[i]);
+            self.max[i] = max(self.max[i], rhs.max[i]);
+        }
     }
 }
 impl<T: BoundsTrait, N: DimName> BitAnd<&Self> for Bounds<T, N>
@@ -297,8 +331,7 @@ impl Bounds3f {
         }
         if let Some((t_min, t_max)) = pair {
             t_min < ray.ray.t_max && t_max > 0.
-        }
-        else {
+        } else {
             false
         }
     }
@@ -306,9 +339,9 @@ impl Bounds3f {
 
 pub struct RayIntersectCache {
     ray: Ray,
-    inverse_d: Vector3f,
-    is_positive_d: Vector3<usize>,
-    is_negative_d: Vector3<usize>,
+    pub inverse_d: Vector3f,
+    pub is_positive_d: Vector3<usize>,
+    pub is_negative_d: Vector3<usize>,
 }
 
 impl Display for RayIntersectCache {
