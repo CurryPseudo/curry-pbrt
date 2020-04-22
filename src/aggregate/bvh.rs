@@ -136,7 +136,7 @@ impl BVHAggregate {
         match &self.nodes[node] {
             BVHNode::Leaf(range) => {
                 for primitive in &self.primitives[range.clone()] {
-                    if primitive.intersect_predicate_through_bound(ray) {
+                    if primitive.intersect_predicate(ray.origin_ray()) {
                         return true;
                     }
                 }
@@ -168,7 +168,7 @@ impl BVHAggregate {
         match &self.nodes[node] {
             BVHNode::Leaf(range) => {
                 for primitive in &self.primitives[range.clone()] {
-                    if let Some(intersect) = primitive.intersect_through_bound(ray) {
+                    if let Some(intersect) = primitive.intersect(ray.origin_ray()) {
                         ray.update_t_max(intersect.get_shape_intersect().get_t());
                         result = Some(intersect);
                     }
