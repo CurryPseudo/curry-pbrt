@@ -5,13 +5,10 @@ use std::{fmt::Debug, fs::File, io::BufWriter, path::Path};
 
 pub trait Renderable {
     fn bound(&self) -> &Bounds2u;
-    fn point_to_index(&self, point: &Point2u) -> usize {
-        self.bound().point_to_offset(point)
-    }
-    fn get_pixels(&mut self) -> &mut Vec<Spectrum>;
+    fn get_pixels(&mut self) -> &mut FixedVec2D<Spectrum>;
     fn add_sample(&mut self, point: &Point2u, spectrum: Spectrum) {
-        let index = self.point_to_index(point);
-        self.get_pixels()[index] += spectrum;
+        let i = Point2u::new(0, 0)+ (point - &self.bound().min);
+        self.get_pixels()[i] += spectrum;
     }
     fn add_samples(&mut self, point: &Point2u, sampels: &[(Vector2f, Spectrum)]) {
         let mut sum = Spectrum::new(0.);
@@ -24,17 +21,15 @@ pub trait Renderable {
 }
 
 pub struct Film {
-    pub(crate) resolution: Vector2u,
-    pixels: Vec<Spectrum>,
+    pixels: FixedVec2D<Spectrum>,
     bound: Bounds2u,
 }
 
 impl Film {
     pub fn new(resolution: Vector2u) -> Self {
-        let pixels = vec![Spectrum::new(0.); resolution.x * resolution.y];
+        let pixels = FixedVec2D::new(Spectrum::new(0.), resolution);
         let bound = Bounds2u::new(&Point2u::new(0, 0), &Point2u::from(resolution));
         Self {
-            resolution,
             pixels,
             bound,
         }
@@ -42,7 +37,8 @@ impl Film {
     pub fn write_image(self, file_path: &Path) {
         let file = File::create(file_path).unwrap();
         let ref mut w = BufWriter::new(file);
-        let mut encoder = Encoder::new(w, self.resolution.x as u32, self.resolution.y as u32);
+        let resolution = self.pixels.size();
+        let mut encoder = Encoder::new(w, resolution.x as u32, resolution.y as u32);
         encoder.set(ColorType::RGB).set(BitDepth::Eight);
         let mut writer = encoder.write_header().unwrap();
         let mut data = Vec::new();
@@ -73,11 +69,12 @@ impl Film {
     }
     pub fn gen_tiles(&self) -> Vec<FilmTile> {
         let tile_size = 16;
+        let resolution = self.pixels.size();
         let tile_indices = Bounds2u::new(
             &Point2u::new(0, 0),
             &Point2u::new(
-                (self.resolution.x - 1) / tile_size + 1,
-                (self.resolution.y - 1) / tile_size + 1,
+                (resolution.x - 1) / tile_size + 1,
+                (resolution.y - 1) / tile_size + 1,
             ),
         );
         let self_bound = self.bound();
@@ -86,8 +83,7 @@ impl Film {
             let next = Point2u::new(tile_index.x + 1, tile_index.y + 1);
             let bound = Bounds2u::new(&(tile_index * tile_size), &(next * tile_size)) & &self_bound;
             r.push(FilmTile::new(
-                bound,
-                tile_indices.point_to_offset(&tile_index) * tile_size * tile_size,
+                bound
             ));
         }
         r
@@ -102,10 +98,7 @@ impl Renderable for Film {
     fn bound(&self) -> &Bounds2u {
         &self.bound
     }
-    fn point_to_index(&self, point: &Point2u) -> usize {
-        point.x + point.y * self.resolution.x
-    }
-    fn get_pixels(&mut self) -> &mut Vec<Spectrum> {
+    fn get_pixels(&mut self) -> &mut FixedVec2D<Spectrum> {
         &mut self.pixels
     }
 }
@@ -130,21 +123,16 @@ impl ParseFromBlockSegment for Film {
 
 pub struct FilmTile {
     bound: Bounds2u,
-    pixels: Vec<Spectrum>,
-    pixel_begin_index: usize,
+    pixels: FixedVec2D<Spectrum>,
 }
 
 impl FilmTile {
-    pub fn new(bound: Bounds2u, pixel_begin_index: usize) -> Self {
+    pub fn new(bound: Bounds2u) -> Self {
         let d = bound.diagonal();
         Self {
             bound,
-            pixels: vec![Spectrum::new(0.); d.x * d.y],
-            pixel_begin_index,
+            pixels: FixedVec2D::new(Spectrum::new(0.), d),
         }
-    }
-    pub fn get_pixel_begin_index(&self) -> usize {
-        self.pixel_begin_index
     }
     pub fn into_merge(self) -> Vec<(Point2u, Spectrum)> {
         let mut index = 0;
@@ -164,7 +152,7 @@ impl Renderable for FilmTile {
     fn bound(&self) -> &Bounds2u {
         &self.bound
     }
-    fn get_pixels(&mut self) -> &mut Vec<Spectrum> {
+    fn get_pixels(&mut self) -> &mut FixedVec2D<Spectrum> {
         &mut self.pixels
     }
 }
