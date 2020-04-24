@@ -10,7 +10,7 @@ pub trait Texture<T>: std::fmt::Debug + Send + Sync {
 }
 
 pub trait TextureMap {
-    fn get<T>(&self, name: &str) -> Option<Arc<ImageTexture<T>>>;
+    fn get<T: Send + Sync + 'static>(&self, name: &str) -> Option<Arc<ImageTexture<T>>>;
 }
 
 impl TextureMap for () {
@@ -37,10 +37,14 @@ impl<T: std::fmt::Debug + Sync + Send + Clone + 'static + ParseFromProperty> Par
     for TextureParseResult<T>
 {
     fn parse_from_property(property_type: &str, basic_type: &BasicTypes) -> Self {
-        TextureParseResult::Value(Arc::new(ConstantTexture::from(T::parse_from_property(
-            property_type,
-            basic_type,
-        ))))
+        match property_type {
+            "texture" => {
+                TextureParseResult::FromName(String::parse_from_property(property_type, basic_type))
+            }
+            _ => TextureParseResult::Value(Arc::new(ConstantTexture::from(
+                T::parse_from_property(property_type, basic_type),
+            ))),
+        }
     }
     fn parse_default() -> Self {
         TextureParseResult::Value(Arc::new(ConstantTexture::from(T::parse_default())))

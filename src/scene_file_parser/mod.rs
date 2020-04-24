@@ -1,5 +1,7 @@
 pub mod lex;
 
+use std::path::PathBuf;
+use std::sync::Arc;
 use crate::*;
 use lex::{parse_lex, Token, TokenWithPos};
 use std::collections::VecDeque;
@@ -251,8 +253,9 @@ impl Property {
                     }
                 }
                 // SingleString
-                if let Token::String(s) = tokens.pop_front().unwrap().token {
-                    Self::Value(BasicTypes(vec![BasicType::BasicString(s)].into()))
+                let token_with_pos = tokens.pop_front().unwrap();
+                if let Token::String(s) = token_with_pos.token {
+                    Self::Value(BasicTypes(vec![BasicType::BasicString(s, token_with_pos.file)].into()))
                 } else {
                     unreachable!()
                 }
@@ -283,8 +286,16 @@ impl BasicTypes {
     fn split(&mut self, size: usize) -> Self {
         Self(self.0.drain(0..size).collect())
     }
+    pub fn get_path(&self) -> Option<PathBuf> {
+        if let BasicType::BasicString(s, file) = self.0.front()? {
+            Some(file.as_path().parent().unwrap().join(s))
+        }
+        else {
+            None
+        }
+    }
     pub fn get_string(&self) -> Option<&str> {
-        if let BasicType::BasicString(s) = self.0.front()? {
+        if let BasicType::BasicString(s, _) = self.0.front()? {
             Some(s)
         } else {
             None
@@ -378,6 +389,15 @@ impl ParseFromProperty for String {
     }
 }
 impl ParseConsumeProperty for String {}
+impl ParseFromProperty for PathBuf {
+    fn parse_from_property(_: &str, basic_type: &BasicTypes) -> Self {
+        basic_type.get_path().unwrap()
+    }
+    fn parse_default() -> Self {
+        PathBuf::new()
+    }
+}
+impl ParseConsumeProperty for PathBuf {}
 impl ParseFromProperty for Float {
     fn parse_from_property(_: &str, basic_type: &BasicTypes) -> Self {
         basic_type.get_float().unwrap()
@@ -408,14 +428,14 @@ impl ParseConsumeProperty for usize {}
 
 #[derive(Debug, Clone)]
 pub enum BasicType {
-    BasicString(String),
+    BasicString(String, PathBuf),
     BasicFloat(Float),
     BasicInteger(Integer),
 }
 impl BasicType {
     fn from_lex(token: TokenWithPos) -> Self {
         match token.token {
-            Token::String(s) => Self::BasicString(s),
+            Token::String(s) => Self::BasicString(s, token.file),
             Token::Integer(i) => Self::BasicInteger(i),
             Token::Float(f) => Self::BasicFloat(f),
             _ => {

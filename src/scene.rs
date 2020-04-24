@@ -1,6 +1,8 @@
 use crate::*;
 use std::sync::Arc;
 
+mod texture_map;
+
 #[derive(Default)]
 pub struct Scene {
     lights: Vec<Arc<dyn Light>>,
@@ -21,64 +23,68 @@ impl Scene {
     pub fn build_aggregate(&mut self, aggregate: Box<dyn Aggregate>) {
         self.aggregate.build(aggregate);
     }
-    pub fn parse_segment(
-        &mut self,
-        material: &mut Option<Arc<dyn Material>>,
-        transform: &mut Option<Transform>,
-        area_light_factory: &mut Option<AreaLightFactory>,
-        segment: &BlockSegment,
-    ) {
+}
+
+#[derive(Default, Clone)]
+struct SceneParseStack {
+    material: Option<Arc<dyn Material>>,
+    transform: Option<Transform>,
+    area_light_factory: Option<AreaLightFactory>,
+    texture_map: texture_map::TextureMap
+}
+
+impl SceneParseStack {
+    pub fn parse(&mut self, segment: &BlockSegment, scene: &mut Scene) {
         if let Some((_, segments)) = segment.get_block("Attribute") {
-            let mut material = material.clone();
-            let mut transform = transform.clone();
-            let mut area_light_factory = None;
+            let mut attribute_stack = self.clone();
             for segment in segments {
-                self.parse_segment(
-                    &mut material,
-                    &mut transform,
-                    &mut area_light_factory,
-                    segment,
-                );
+                attribute_stack.parse(segment, scene);
             }
             return;
         }
         let (object_type, property_set) = segment.get_object().unwrap();
         match object_type {
             "Material" => {
-                let m: Arc<dyn Material> = parse_material(property_set, &()).into();
-                *material = Some(m.clone());
-                self.materials.push(m);
+                let m: Arc<dyn Material> = parse_material(property_set, &self.texture_map).into();
+                self.material = Some(m.clone());
+                scene.materials.push(m);
             }
             "Shape" => {
                 for mut shape in parse_shape(property_set) {
-                    if let Some(transform) = &transform {
+                    if let Some(transform) = &self.transform {
                         shape = shape_apply(shape, transform);
                     }
                     let shape: Arc<dyn Shape> = shape.into();
-                    let primitive = if let Some(area_light_factory) = area_light_factory {
+                    let primitive = if let Some(area_light_factory) = &self.area_light_factory {
                         let area_light: Arc<dyn Light> = area_light_factory(shape.clone()).into();
-                        self.lights.push(area_light.clone());
+                        scene.lights.push(area_light.clone());
                         Primitive::new(shape, PrimitiveSource::light(area_light))
                     } else {
-                        Primitive::new(shape, PrimitiveSource::material(material.clone().unwrap()))
+                        Primitive::new(
+                            shape,
+                            PrimitiveSource::material(self.material.clone().unwrap()),
+                        )
                     };
-                    self.aggregate.add_primitive(primitive);
+                    scene.aggregate.add_primitive(primitive);
                 }
             }
             "LightSource" => {
                 let mut light = parse_light(property_set);
-                if let Some(transform) = &transform {
+                if let Some(transform) = &self.transform {
                     light = light.box_apply(transform);
                 }
-                self.lights.push(light.into());
+                scene.lights.push(light.into());
             }
             "AreaLightSource" => {
-                *area_light_factory = Some(parse_area_light(property_set));
+                self.area_light_factory = Some(parse_area_light(property_set));
+            }
+            "Texture" => {
+                self.texture_map.add_texture(property_set);
             }
             _ => {
                 let this_transform = Transform::parse_from_segment(segment).unwrap();
-                *transform = Some(
-                    transform
+                self.transform = Some(
+                    self.transform
                         .clone()
                         .map_or(this_transform.clone(), |transform| {
                             transform.apply(&this_transform)
@@ -93,17 +99,10 @@ impl ParseFromBlockSegment for Scene {
     type T = Scene;
     fn parse_from_segment(segment: &BlockSegment) -> Option<Self::T> {
         let (_, block_segments) = segment.get_block("World")?;
-        let mut material = None;
-        let mut transform = None;
-        let mut area_light_factory = None;
         let mut scene = Scene::default();
+        let mut scene_parse_stack = SceneParseStack::default();
         for segment in block_segments {
-            scene.parse_segment(
-                &mut material,
-                &mut transform,
-                &mut area_light_factory,
-                segment,
-            );
+            scene_parse_stack.parse(segment, &mut scene);
         }
         Some(scene)
     }
