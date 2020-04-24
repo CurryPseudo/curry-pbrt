@@ -1,6 +1,7 @@
 use crate::*;
 use std::ops::Index;
 use std::ops::IndexMut;
+#[derive(Debug)]
 pub struct FixedVec2D<T> {
     row_size: usize,
     vec: Vec<T>,

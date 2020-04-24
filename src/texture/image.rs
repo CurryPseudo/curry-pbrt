@@ -7,6 +7,7 @@ pub trait ImageTextureContent {
     fn from_rgb_spectrum(s: RGBSpectrum) -> Self;
 }
 
+#[derive(Debug)]
 pub struct ImageTexture<T> {
     pixels: FixedVec2D<T>,
 }
@@ -40,3 +41,14 @@ impl<T: Clone + ImageTextureContent> ImageTexture<T> {
     }
 }
 
+impl<T: Clone + std::marker::Sync + std::marker::Send + std::fmt::Debug> Texture<T> for ImageTexture<T> {
+    fn evaluate(&self, uv: &Point2f) -> T {
+        let size = self.pixels.size();
+        let i = uv
+            .coords
+            .component_mul(&size.map(|u| u as Float))
+            .map(|f| f as usize)
+            .zip_map(&size, |x, size| min(x, size - 1));
+        self.pixels[i.into()].clone()
+    }
+}

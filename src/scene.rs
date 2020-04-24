@@ -45,7 +45,7 @@ impl Scene {
         let (object_type, property_set) = segment.get_object().unwrap();
         match object_type {
             "Material" => {
-                let m: Arc<dyn Material> = parse_material(property_set).into();
+                let m: Arc<dyn Material> = parse_material(property_set, &()).into();
                 *material = Some(m.clone());
                 self.materials.push(m);
             }
