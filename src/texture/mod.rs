@@ -1,28 +1,28 @@
 use crate::*;
+use std::sync::Arc;
+mod constant;
+mod image;
+pub use constant::*;
+pub use image::*;
 
-#[derive(Debug, Clone)]
-pub struct Texture<T> {
-    t: T,
+pub trait Texture<T>: std::fmt::Debug + Send + Sync {
+    fn evaluate(&self, uv: &Point2f) -> T;
+
 }
 
-impl<T> From<T> for Texture<T> {
-    fn from(t: T) -> Self {
-        Self { t }
-    }
-}
 
-impl<T: Clone> Texture<T> {
-    pub fn evaluate(&self, _uv: &Point2f) -> T {
-        self.t.clone()
-    }
-}
-
-impl<T: ParseFromProperty> ParseFromProperty for Texture<T> {
+impl<T: std::fmt::Debug + Sync + Send + Clone + 'static + ParseFromProperty> ParseFromProperty for Arc<dyn Texture<T>> {
     fn parse_from_property(property_type: &str, basic_type: &BasicTypes) -> Self {
-        Texture::from(T::parse_from_property(property_type, basic_type))
+        Arc::new(ConstantTexture::from(T::parse_from_property(
+            property_type,
+            basic_type,
+        )))
     }
     fn parse_default() -> Self {
-        Texture::from(T::parse_default())
+        Arc::new(ConstantTexture::from(T::parse_default()))
     }
 }
 
+pub fn constant_texture<T: 'static + std::fmt::Debug + Sync + Send + Clone>(t: T) -> Arc<dyn Texture<T>> {
+    Arc::new(ConstantTexture::from(t))
+}

@@ -53,6 +53,15 @@ pub fn gamma_correct(f: Float) -> Float {
     }
 }
 
+pub fn inverse_gamma_correct(f: Float) -> Float {
+    if f <= 0.04045 {
+        f * 1. / 12.92
+    }
+    else {
+        ((f + 0.055) / 1.05).powf(2.4)
+    }
+}
+
 pub fn coordinate_system(z: &Vector3f) -> (Vector3f, Vector3f) {
     let x = if z.x.abs() > z.y.abs() {
         Vector3f::new(-z.z, 0., z.x) / (z.x * z.x + z.z * z.z).sqrt()

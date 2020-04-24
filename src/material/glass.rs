@@ -2,13 +2,13 @@ use crate::*;
 use std::sync::Arc;
 #[derive(Clone, Debug)]
 pub struct GlassMaterial {
-    r: Texture<Spectrum>,
-    t: Texture<Spectrum>,
-    eta: Texture<Float>,
+    r: Arc<dyn Texture<Spectrum>>,
+    t: Arc<dyn Texture<Spectrum>>,
+    eta: Arc<dyn Texture<Float>>,
 }
 
 impl GlassMaterial {
-    pub fn new(r: Texture<Spectrum>, t: Texture<Spectrum>, eta: Texture<Float>) -> Self {
+    pub fn new(r: Arc<dyn Texture<Spectrum>>, t: Arc<dyn Texture<Spectrum>>, eta: Arc<dyn Texture<Float>>) -> Self {
         Self { r, t, eta }
     }
 }

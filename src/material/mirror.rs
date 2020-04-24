@@ -2,11 +2,11 @@ use crate::*;
 use std::sync::Arc;
 #[derive(Debug, Clone)]
 pub struct MirrorMaterial {
-    r: Texture<Spectrum>,
+    r: Arc<dyn Texture<Spectrum>>,
 }
 
 impl MirrorMaterial {
-    pub fn new(r: Texture<Spectrum>) -> Self {
+    pub fn new(r: Arc<dyn Texture<Spectrum>>) -> Self {
         Self { r }
     }
 }

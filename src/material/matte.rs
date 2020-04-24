@@ -3,12 +3,12 @@ use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct MatteMaterial {
-    kd: Texture<Spectrum>,
-    sigma: Texture<Float>,
+    kd: Arc<dyn Texture<Spectrum>>,
+    sigma: Arc<dyn Texture<Float>>,
 }
 
 impl MatteMaterial {
-    pub fn new(kd: Texture<Spectrum>, sigma: Texture<Float>) -> Self {
+    pub fn new(kd: Arc<dyn Texture<Spectrum>>, sigma: Arc<dyn Texture<Float>>) -> Self {
         Self { kd, sigma }
     }
 }

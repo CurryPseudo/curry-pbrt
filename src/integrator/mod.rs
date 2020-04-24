@@ -9,6 +9,7 @@ pub trait Integrator: Sync {
     fn li(&self, ray: &Ray, scene: &Scene, sampler: &mut dyn Sampler) -> Spectrum;
 }
 
+#[deny(clippy::vtable_address_comparisons)]
 pub fn uniform_sample_one_light(
     shape_point: &ShapePoint,
     bsdf: &BSDF,

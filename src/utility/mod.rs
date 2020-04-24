@@ -13,6 +13,9 @@ impl<T: Clone> FixedVec2D<T> {
             vec: vec![t; size.x * size.y],
         }
     }
+    pub fn from_vec(vec: Vec<T>, row_size: usize) -> Self {
+        Self { row_size, vec }
+    }
 }
 
 impl<T> FixedVec2D<T> {

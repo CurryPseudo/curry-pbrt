@@ -77,7 +77,7 @@ impl Triangle {
             uv0,
             uv1,
             uv2,
-            n
+            n,
         }
     }
     pub fn indices(&self) -> (usize, usize, usize) {
@@ -177,14 +177,13 @@ impl Shape for Triangle {
         p1t.z *= sz;
         p2t.z *= sz;
         let t_scaled = e0 * p0t.z + e1 * p1t.z + e2 * p2t.z;
-        if det < 0. && (t_scaled >= 0. || t_scaled < ray.t_max * det) {
-            return false;
-        } else if det > 0. && (t_scaled <= 0. || t_scaled > ray.t_max * det) {
+        if (det < 0. && (t_scaled >= 0. || t_scaled < ray.t_max * det))
+            || (det > 0. && (t_scaled <= 0. || t_scaled > ray.t_max * det))
+        {
             return false;
         }
         let inv_det = 1. / det;
         let t = t_scaled * inv_det;
-        
         let max_zt = Vector3f::new(p0t.z, p1t.z, p2t.z).abs().max();
         let delta_z = gamma(3) * max_zt;
 
@@ -244,15 +243,14 @@ impl Shape for Triangle {
         p1t.z *= sz;
         p2t.z *= sz;
         let t_scaled = e0 * p0t.z + e1 * p1t.z + e2 * p2t.z;
-        if det < 0. && (t_scaled >= 0. || t_scaled < ray.t_max * det) {
-            return None;
-        } else if det > 0. && (t_scaled <= 0. || t_scaled > ray.t_max * det) {
+        if (det < 0. && (t_scaled >= 0. || t_scaled < ray.t_max * det))
+            || (det > 0. && (t_scaled <= 0. || t_scaled > ray.t_max * det))
+        {
             return None;
         }
         let inv_det = 1. / det;
         let (b0, b1, b2) = (e0 * inv_det, e1 * inv_det, e2 * inv_det);
         let t = t_scaled * inv_det;
-        
         let max_zt = Vector3f::new(p0t.z, p1t.z, p2t.z).abs().max();
         let delta_z = gamma(3) * max_zt;
 
