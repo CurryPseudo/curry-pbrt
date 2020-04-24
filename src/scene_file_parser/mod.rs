@@ -11,7 +11,7 @@ impl FileBlock {
     fn from_lex(tokens: Vec<TokenWithPos>) -> Self {
         let mut tokens = tokens.into_iter().collect::<VecDeque<_>>();
         let mut segments = Vec::new();
-        while tokens.len() != 0 {
+        while !tokens.is_empty() {
             segments.push(BlockSegment::from_lex(&mut tokens));
         }
         Self(segments)
@@ -179,7 +179,7 @@ impl PropertySet {
         ))
     }
     pub fn get_default<T: ParseFromProperty>(&self, name: &str) -> T {
-        self.get_value(name).unwrap_or(T::parse_default())
+        self.get_value(name).unwrap_or_else(T::parse_default)
     }
     pub fn as_one_basic_types(&mut self, size: usize) -> Option<BasicTypes> {
         let mut basic_type_vec = Vec::new();
@@ -270,7 +270,7 @@ impl BasicTypes {
             Token::Array(internal_tokens) => {
                 let values = internal_tokens
                     .into_iter()
-                    .map(|token| BasicType::from_lex(token))
+                    .map(BasicType::from_lex)
                     .collect::<Vec<_>>();
                 Self(values.into())
             }

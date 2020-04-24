@@ -60,7 +60,7 @@ where
         let mut point_data = Vec::new();
         for i in 0..dim {
             let bounds_index = (index & (1 << i)) >> i;
-            point_data.push(self[bounds_index][i].clone());
+            point_data.push(self[bounds_index][i]);
         }
         Point::from_slice(&point_data)
     }
@@ -91,8 +91,8 @@ where
         Point::from(o)
     }
     pub fn expand(mut self, delta: T) -> Self {
-        self.min = self.min - Vector::from_element(delta.clone());
-        self.max = self.max + Vector::from_element(delta);
+        self.min -= Vector::from_element(delta);
+        self.max += Vector::from_element(delta);
         self
     }
     pub fn overlaps(&self, rhs: &Self) -> bool {
@@ -254,7 +254,7 @@ impl<T: BoundsTrait> Bounds3<T> {
     }
     pub fn surface_area(&self) -> T {
         let d = self.diagonal();
-        return T::from_i32(2).unwrap() * (d.x * d.y + d.x * d.z + d.y * d.z);
+        T::from_i32(2).unwrap() * (d.x * d.y + d.x * d.z + d.y * d.z)
     }
 }
 
@@ -301,7 +301,7 @@ impl Transformable for Bounds3f {
 
 impl Bounds3f {
     pub fn intersect_predicate(&self, ray: &Ray) -> bool {
-        self.intersect_predicate_cached(&RayIntersectCache::from(ray.clone()))
+        self.intersect_predicate_cached(&RayIntersectCache::from(*ray))
     }
     fn intersect_component(&self, ray: &RayIntersectCache, c: usize) -> (Float, Float) {
         (

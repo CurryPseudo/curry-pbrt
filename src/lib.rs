@@ -7,6 +7,8 @@ extern crate downcast_rs;
 #[macro_use]
 extern crate lazy_static;
 
+#[allow(clippy::excessive_precision)]
+
 pub mod camera;
 pub use camera::*;
 pub mod def;

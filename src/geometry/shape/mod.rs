@@ -51,7 +51,7 @@ pub trait Shape: DowncastSync {
         self.default_by_point_pdf(point, shape_point)
     }
     fn by_point_w_pdf(&self, point: &Point3f, w: &Vector3f) -> Float {
-        let ray = Ray::new_od(point.clone(), w.clone());
+        let ray = Ray::new_od(*point, *w);
         if let Some(intersect) = self.intersect(&ray) {
             self.by_point_pdf(point, intersect.get_shape_point())
         } else {

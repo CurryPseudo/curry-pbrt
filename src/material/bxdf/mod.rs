@@ -76,7 +76,7 @@ pub trait BxDF {
 }
 
 pub struct BSDF {
-    n: Vector3f,
+    _n: Vector3f,
     sn: Vector3f,
     snx: Vector3f,
     sny: Vector3f,
@@ -90,7 +90,7 @@ impl BSDF {
         let (snx, sny) = coordinate_system(&sn);
         let n = n.x * snx + n.y * sny + n.z * sn;
         Self {
-            n,
+            _n: n,
             sn,
             snx,
             sny,
@@ -115,7 +115,7 @@ impl BSDF {
         self.bxdfs.push(bxdf);
     }
     pub fn add_delta_bxdf<T: DeltaBxDF + BxDF + 'static>(&mut self, delta_bxdf: Arc<T>) {
-        self.delta_bxdfs.push(delta_bxdf.clone());
+        self.delta_bxdfs.push(delta_bxdf);
     }
     pub fn sample_all_delta_f(&self, wo: &Vector3f) -> Vec<(Vector3f, Spectrum)> {
         let mut r = Vec::new();
@@ -185,7 +185,7 @@ impl BSDF {
         let mut pdf = 0.;
         for bxdf in &self.bxdfs {
             if let (Some(this_f), this_pdf) = bxdf.f_pdf(&wo, &wi) {
-                f = Some(f.unwrap_or(Spectrum::new(0.)) + this_f);
+                f = Some(f.unwrap_or_else(|| Spectrum::new(0.)) + this_f);
                 pdf += this_pdf;
             }
         }

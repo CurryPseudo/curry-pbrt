@@ -9,6 +9,7 @@ pub trait Integrator: Sync {
     fn li(&self, ray: &Ray, scene: &Scene, sampler: &mut dyn Sampler) -> Spectrum;
 }
 
+#[allow(clippy::vtable_address_comparisons)]
 pub fn uniform_sample_one_light(
     shape_point: &ShapePoint,
     bsdf: &BSDF,
@@ -19,9 +20,9 @@ pub fn uniform_sample_one_light(
     let mut l = Spectrum::new(0.);
     let lights = scene.get_lights();
     let n = &shape_point.n;
-    if lights.len() > 0 {
+    if !lights.is_empty() {
         let light = &lights[(sampler.get_usize(lights.len())) as usize];
-        let point = shape_point.p.clone();
+        let point = shape_point.p;
         {
             // sample light
             if let (wi, Some(li), li_pdf, visibility_tester) =
@@ -55,7 +56,7 @@ pub fn uniform_sample_one_light(
             if let (wi, Some(f), f_pdf) = bsdf.sample_no_delta_f(&wo, &sampler.get_2d()) {
                 trace!("Sample bsdf Get f {} pdf {}", f, f_pdf);
                 if f_pdf != 0. {
-                    let ray = Ray::new_shape_point_d(&shape_point, wi.clone());
+                    let ray = Ray::new_shape_point_d(&shape_point, wi);
                     if let Some(intersect) = scene.intersect(&ray) {
                         if let Some(intersect_light) = intersect.get_light() {
                             if Arc::ptr_eq(light, &intersect_light) {
