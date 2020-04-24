@@ -1,7 +1,6 @@
 pub mod lex;
 
 use std::path::PathBuf;
-use std::sync::Arc;
 use crate::*;
 use lex::{parse_lex, Token, TokenWithPos};
 use std::collections::VecDeque;
