@@ -13,13 +13,8 @@ impl FresnelDielectric {
     }
 }
 
+#[derive(Default)]
 pub struct FresnelNoOp {}
-
-impl FresnelNoOp {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
 
 impl Fresnel for FresnelNoOp {
     fn evaluate(&self, _cos_i: Float) -> Float {

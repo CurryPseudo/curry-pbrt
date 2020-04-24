@@ -22,7 +22,7 @@ impl Default for RGBSpectrum {
 
 impl From<Option<RGBSpectrum>> for RGBSpectrum {
     fn from(s: Option<RGBSpectrum>) -> Self {
-        s.unwrap_or(Self::default())
+        s.unwrap_or_default()
     }
 }
 
@@ -71,7 +71,8 @@ impl RGBSpectrum {
         r[2] = 0.019334 * self.0[0] + 0.119193 * self.0[1] + 0.950227 * self.0[2];
         Self(r)
     }
-    pub fn from_xyz(self) -> Self {
+    #[allow(clippy::excessive_precision)]
+    pub fn to_rgb(self) -> Self {
         let mut r = [0., 0., 0.];
         r[0] = 3.240479 * self.0[0] - 1.537150 * self.0[1] - 0.498535 * self.0[2];
         r[1] = -0.969256 * self.0[0] + 1.875991 * self.0[1] + 0.041556 * self.0[2];
@@ -91,7 +92,7 @@ impl RGBSpectrum {
         let scale = (CIE_LAMBDA[N_CIE_SAMPLES - 1] - CIE_LAMBDA[0])
             / (CIE_Y_INTEGRAL * N_CIE_SAMPLES as Float);
         xyz *= scale;
-        xyz.from_xyz()
+        xyz.to_rgb()
     }
 }
 
@@ -235,12 +236,12 @@ const N_CIE_SAMPLES: usize = CIE_LAMBDA_END - CIE_LAMBDA_BEGIN;
 lazy_static! {
     static ref CIE_LAMBDA: Vec<Float> = {
         (CIE_LAMBDA_BEGIN..CIE_LAMBDA_END)
-            .into_iter()
             .map(|x| x as Float)
             .collect()
     };
 }
 
+#[allow(clippy::excessive_precision)]
 const CIE_X: [Float; N_CIE_SAMPLES] = [
     // CIE X function values
     0.0001299000,
@@ -716,6 +717,7 @@ const CIE_X: [Float; N_CIE_SAMPLES] = [
     0.000001251141,
 ];
 
+#[allow(clippy::excessive_precision)]
 const CIE_Y: [Float; N_CIE_SAMPLES] = [
     // CIE Y unction values
     0.000003917000,
@@ -1191,6 +1193,7 @@ const CIE_Y: [Float; N_CIE_SAMPLES] = [
     0.0000004518100,
 ];
 
+#[allow(clippy::excessive_precision)]
 const CIE_Z: [Float; N_CIE_SAMPLES] = [
     // CIE Z unction values
     0.0006061000,

@@ -32,17 +32,13 @@ impl Ray {
         let d = to - from;
         let a_bit = 0.00001;
         let t_max = 1. - a_bit;
-        Self {
-            o,
-            d,
-            t_max,
-        }
+        Self { o, d, t_max }
     }
     pub fn new(o: Point3f, d: Vector3f, t_max: Float) -> Self {
         Self { o, d, t_max }
     }
     pub fn eval(&self, t: Float) -> Point3f {
-        &self.o + &self.d * t
+        self.o + self.d * t
     }
 }
 

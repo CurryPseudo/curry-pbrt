@@ -27,7 +27,7 @@ fn scrambled_inverse(mut x: usize, base_index: usize) -> (usize, usize) {
     let base = PRIMS[base_index];
     while x != 0 {
         let digit = x % base;
-        x = x / base;
+        x /= base;
         accumulated = accumulated * base + permutation_map(digit, base_index);
         digit_count += 1;
     }
@@ -39,7 +39,7 @@ fn inverse(mut x: usize, base_index: usize) -> (usize, usize) {
     let base = PRIMS[base_index];
     while x != 0 {
         let digit = x % base;
-        x = x / base;
+        x /= base;
         accumulated = accumulated * base + digit;
         digit_count += 1;
     }
@@ -114,7 +114,7 @@ impl Sampler for HaltonSampler {
         for i in 0..2 {
             self.index += pixel_inverse[i] * (self.scale[1 - i]) * self.mult_inverse[i];
         }
-        self.index = self.index % (self.scale.x * self.scale.y);
+        self.index %= self.scale.x * self.scale.y;
         self.dim = 0;
     }
     fn next_sample(&mut self) {
@@ -217,11 +217,10 @@ lazy_static! {
     static ref PERMUTATION: Vec<usize> = {
         let mut r = Vec::new();
         let mut rng = thread_rng();
-        for i in 0..PRIMS.len() {
-            let n = PRIMS[i];
-            let mut this_permutation = vec![0; n];
-            for j in 0..n {
-                this_permutation[j] = j;
+        for n in PRIMS.iter() {
+            let mut this_permutation = vec![0; *n];
+            for (i, this_perm) in this_permutation.iter_mut().enumerate() {
+                *this_perm = i;
             }
             this_permutation.shuffle(&mut rng);
             r.extend(this_permutation.into_iter())

@@ -98,14 +98,16 @@ pub fn sample_distribution_1d_remap(
         cdf.push(cdf.last().unwrap_or(&0.) + x);
     }
     let sum = cdf.last().unwrap();
-    for i in 0..len {
-        if u * sum <= cdf[i] {
+    for (i, cdf) in cdf.iter().enumerate() {
+        if u * sum <= *cdf {
             let pdf = f(i) / sum;
-            return (i, pdf, (cdf[i] - u * sum) / f(i));
+            return (i, pdf, (cdf - u * sum) / f(i));
         }
     }
     (len - 1, f(len - 1) / sum, 1.)
 }
+#[allow(clippy::excessive_precision)]
 pub const INV_PI: Float = 0.31830988618379067154;
 
+#[allow(clippy::excessive_precision)]
 pub const PI: Float = 3.14159265358979323846;

@@ -131,12 +131,9 @@ impl BVHAggregate {
                 right,
                 bound,
             } => {
-                if bound.intersect_predicate_cached(ray) {
-                    if self.intersect_predicate_through_bound(*left, ray)
-                        || self.intersect_predicate_through_bound(*right, ray)
-                    {
-                        return true;
-                    }
+                if bound.intersect_predicate_cached(ray) && (self.intersect_predicate_through_bound(*left, ray)
+                        || self.intersect_predicate_through_bound(*right, ray)) {
+                    return true;
                 }
                 false
             }

@@ -48,9 +48,10 @@ pub fn parse_light(property_set: &PropertySet) -> Box<dyn Light> {
         _ => panic!(),
     }
 }
+pub type AreaLightFactory = Box<dyn Fn(Arc<dyn Shape>) -> Box<dyn Light>>;
 pub fn parse_area_light(
     property_set: &PropertySet,
-) -> Box<dyn Fn(Arc<dyn Shape>) -> Box<dyn Light>> {
+) -> AreaLightFactory {
     match property_set.get_name().unwrap() {
         "diffuse" => {
             let l = property_set.get_default("L");

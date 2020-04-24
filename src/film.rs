@@ -7,7 +7,7 @@ pub trait Renderable {
     fn bound(&self) -> &Bounds2u;
     fn get_pixels(&mut self) -> &mut FixedVec2D<Spectrum>;
     fn add_sample(&mut self, point: &Point2u, spectrum: Spectrum) {
-        let i = Point2u::new(0, 0)+ (point - &self.bound().min);
+        let i = Point2u::new(0, 0)+ (point - self.bound().min);
         self.get_pixels()[i] += spectrum;
     }
     fn add_samples(&mut self, point: &Point2u, sampels: &[(Vector2f, Spectrum)]) {
@@ -36,7 +36,7 @@ impl Film {
     }
     pub fn write_image(self, file_path: &Path) {
         let file = File::create(file_path).unwrap();
-        let ref mut w = BufWriter::new(file);
+        let  w = BufWriter::new(file);
         let resolution = self.pixels.size();
         let mut encoder = Encoder::new(w, resolution.x as u32, resolution.y as u32);
         encoder.set(ColorType::RGB).set(BitDepth::Eight);
@@ -81,7 +81,7 @@ impl Film {
         let mut r = Vec::new();
         for tile_index in tile_indices.index_inside() {
             let next = Point2u::new(tile_index.x + 1, tile_index.y + 1);
-            let bound = Bounds2u::new(&(tile_index * tile_size), &(next * tile_size)) & &self_bound;
+            let bound = Bounds2u::new(&(tile_index * tile_size), &(next * tile_size)) & self_bound;
             r.push(FilmTile::new(
                 bound
             ));
@@ -113,7 +113,7 @@ impl ParseFromBlockSegment for Film {
             let resolution = Vector2u::new(x_resolution, y_resolution);
             let file_name = property_set
                 .get_string("filename")
-                .unwrap_or(String::from("curry-pbrt.png"));
+                .unwrap_or_else(|| String::from("curry-pbrt.png"));
             Some((Film::new(resolution), file_name, resolution))
         } else {
             panic!()

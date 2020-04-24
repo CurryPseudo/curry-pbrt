@@ -66,7 +66,7 @@ impl Triangle {
         let (dp02, dp12) = (p0 - p2, p1 - p2);
         let n = Normal3f::from(dp02.cross(&dp12).normalize());
         Self {
-            mesh: mesh.clone(),
+            mesh,
             index,
             v0,
             v1,
@@ -202,6 +202,7 @@ impl Shape for Triangle {
         }
         true
     }
+    #[allow(clippy::many_single_char_names)]
     fn intersect(&self, ray: &Ray) -> Option<ShapeIntersect> {
         let (p0, p1, p2) = self.vertices();
         let o = ray.o;

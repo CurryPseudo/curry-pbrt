@@ -14,7 +14,7 @@ impl Sphere {
     fn calc_uv(&self, p: Point3f) -> Point2f {
         let u = (p.y.atan2(p.x) + PI) * 0.5 * INV_PI;
         let v = clamp(p.z / self.radius, -1., 1.).acos() * INV_PI;
-        return Point2f::new(u, v);
+        Point2f::new(u, v)
     }
 }
 
@@ -25,6 +25,7 @@ impl Shape for Sphere {
             &Point3f::from(Vector3f::from_element(self.radius)),
         )
     }
+    #[allow(clippy::many_single_char_names)]
     fn intersect(&self, ray: &Ray) -> Option<ShapeIntersect> {
         let a = ray.d.magnitude_squared();
         let b = 2. * ray.d.dot(&ray.o.coords);
@@ -61,6 +62,7 @@ impl Shape for Sphere {
             1. / self.area(),
         )
     }
+    #[allow(clippy::many_single_char_names)]
     fn sample_by_point(&self, point: &Point3f, sampler: &mut dyn Sampler) -> (ShapePoint, Float) {
         let distance_2 = point.coords.magnitude_squared();
         let radius_2 = self.radius * self.radius;

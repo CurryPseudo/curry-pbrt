@@ -25,7 +25,7 @@ impl Scene {
         &mut self,
         material: &mut Option<Arc<dyn Material>>,
         transform: &mut Option<Transform>,
-        area_light_factory: &mut Option<Box<dyn Fn(Arc<dyn Shape>) -> Box<dyn Light>>>,
+        area_light_factory: &mut Option<AreaLightFactory>,
         segment: &BlockSegment,
     ) {
         if let Some((_, segments)) = segment.get_block("Attribute") {

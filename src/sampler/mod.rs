@@ -35,10 +35,10 @@ pub trait Sampler: Sync + Send {
         Point2f::new(self.get_1d(), self.get_1d())
     }
     fn get_1ds(&mut self, count: usize) -> Vec<Float> {
-        (0..count).into_iter().map(|_| self.get_1d()).collect()
+        (0..count).map(|_| self.get_1d()).collect()
     }
     fn get_2ds(&mut self, count: usize) -> Vec<Point2f> {
-        (0..count).into_iter().map(|_| self.get_2d()).collect()
+        (0..count).map(|_| self.get_2d()).collect()
     }
     fn get_sample_per_pixel(&self) -> usize;
 }
