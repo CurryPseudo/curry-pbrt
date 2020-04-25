@@ -7,9 +7,10 @@ pub use image::*;
 
 pub trait Texture<T>: std::fmt::Debug + Send + Sync {
     fn evaluate(&self, uv: &Point2f) -> T;
+    fn pixels(&self) -> FixedVec2D<T>;
 }
 
-pub trait TextureMap {
+pub trait TextureMap: std::fmt::Debug {
     fn get<T: Send + Sync + 'static>(&self, name: &str) -> Option<Arc<ImageTexture<T>>>;
 }
 
@@ -24,7 +25,9 @@ pub enum TextureParseResult<T> {
     FromName(String),
 }
 
-impl<T: Send + Sync + std::fmt::Debug + Clone + 'static> TextureParseResult<T> {
+impl<T: ImageTextureContent + Send + Sync + std::fmt::Debug + Clone + 'static>
+    TextureParseResult<T>
+{
     pub fn into_texture<M: TextureMap>(self, map: &M) -> Arc<dyn Texture<T>> {
         match self {
             Self::Value(r) => r,
@@ -51,13 +54,33 @@ impl<T: std::fmt::Debug + Sync + Send + Clone + 'static + ParseFromProperty> Par
     }
 }
 
+impl<T: 'static + std::fmt::Debug + Sync + Send + Clone + ImageTextureContent> ParseFromProperty
+    for Arc<dyn Texture<T>>
+{
+    fn parse_from_property(type_name: &str, basic_type: &BasicTypes) -> Self {
+        match type_name {
+            "string" => {
+                let texture_path = basic_type.get_path().unwrap();
+                Arc::new(ImageTexture::from_file(&texture_path))
+            }
+            _ => panic!()
+        }
+    }
+    fn parse_default() -> Self {
+        constant_texture(T::default())
+    }
+}
+
 pub fn constant_texture<T: 'static + std::fmt::Debug + Sync + Send + Clone>(
     t: T,
 ) -> Arc<dyn Texture<T>> {
     Arc::new(ConstantTexture::from(t))
 }
 
-fn option_to_texture<T: Send + Sync + std::fmt::Debug + Clone + 'static, M: TextureMap>(
+fn option_to_texture<
+    T: ImageTextureContent + Send + Sync + std::fmt::Debug + Clone + 'static,
+    M: TextureMap,
+>(
     texture_parse_result: Option<TextureParseResult<T>>,
     m: &M,
 ) -> Option<Arc<dyn Texture<T>>> {
@@ -65,7 +88,7 @@ fn option_to_texture<T: Send + Sync + std::fmt::Debug + Clone + 'static, M: Text
 }
 
 pub fn get_texture<
-    T: 'static + Send + Sync + std::fmt::Debug + ParseFromProperty + Clone,
+    T: ImageTextureContent + 'static + Send + Sync + std::fmt::Debug + ParseFromProperty + Clone,
     M: TextureMap,
 >(
     property_set: &PropertySet,

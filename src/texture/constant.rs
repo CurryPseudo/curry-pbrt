@@ -12,4 +12,7 @@ impl<T: Clone + Send + Sync + std::fmt::Debug> Texture<T> for ConstantTexture<T>
     fn evaluate(&self, _: &Point2f) -> T {
         self.0.clone()
     }
+    fn pixels(&self) -> FixedVec2D<T> {
+        FixedVec2D::new(self.0.clone(), Vector2u::new(1, 1))
+    }
 }

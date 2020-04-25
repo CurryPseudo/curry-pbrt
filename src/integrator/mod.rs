@@ -57,6 +57,7 @@ pub fn uniform_sample_one_light(
                 trace!("Sample bsdf Get f {} pdf {}", f, f_pdf);
                 if f_pdf != 0. {
                     let ray = Ray::new_shape_point_d(&shape_point, wi);
+                    let mut ld = Spectrum::new(0.);
                     if let Some(intersect) = scene.intersect(&ray) {
                         if let Some(intersect_light) = intersect.get_light() {
                             if Arc::ptr_eq(light, &intersect_light) {
@@ -65,7 +66,7 @@ pub fn uniform_sample_one_light(
                                 {
                                     if li_pdf != 0. {
                                         trace!("Sample bsdf Get li {} pdf {}", li, f_pdf);
-                                        let ld = li
+                                        ld = li
                                             * f
                                             * n.dot(&wi).abs()
                                             * power_heuristic(f_pdf, li_pdf)
@@ -74,12 +75,16 @@ pub fn uniform_sample_one_light(
                                             debug!("li_pdf {}", li_pdf);
                                             debug!("f_pdf {}", f_pdf);
                                         }
-                                        l += ld;
                                     }
                                 }
                             }
                         }
+                    } else if let (Some(le), le_pdf) = light.le_out_scene_pdf(&ray) {
+                        if le_pdf != 0. {
+                            ld = le * f * n.dot(&wi).abs() * power_heuristic(f_pdf, le_pdf) / f_pdf;
+                        }
                     }
+                    l += ld;
                 }
             }
         }

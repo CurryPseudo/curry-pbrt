@@ -1,4 +1,4 @@
-use curry_pbrt::{geometry::{Vector2u, concentric_sample_disk}, sampler::{HaltonSampler, Sampler}};
+use curry_pbrt::*;
 fn main() {
     let mut sampler = Box::new(HaltonSampler::new(128, Vector2u::new(1024, 768)));
     for _ in 0..128 {

@@ -59,8 +59,7 @@ pub fn gamma_correct(f: Float) -> Float {
 pub fn inverse_gamma_correct(f: Float) -> Float {
     if f <= 0.04045 {
         f * 1. / 12.92
-    }
-    else {
+    } else {
         ((f + 0.055) / 1.05).powf(2.4)
     }
 }
@@ -92,6 +91,67 @@ pub fn sample_distribution_1d_remap(
     f: &dyn Fn(usize) -> Float,
 ) -> (usize, Float, Float) {
     Distribution1D::new(f, len).sample_remap(u)
+}
+pub fn polar_point(r: Float, theta: Float) -> Point2f {
+    r * Point2f::new(theta.cos(), theta.sin())
+}
+pub fn concentric_sample_disk(u: Point2f) -> Point2f {
+    let u = 2. * u - Vector2f::new(1., 1.);
+    if u.x == 0. || u.y == 0. {
+        Point2f::new(0., 0.)
+    } else {
+        let (r, theta) = if u.x.abs() > u.y.abs() {
+            (u.x, (PI / 4.) * (u.y / u.x))
+        } else {
+            (u.y, (PI / 2.) - (PI / 4.) * (u.x / u.y))
+        };
+        polar_point(r, theta)
+    }
+}
+pub fn uniform_sample_hemisphere(u: Point2f) -> Vector3f {
+    let z = 1. - 2. * u.x;
+    let r = max(0., 1. - z * z).sqrt();
+    let phi = 2. * PI * u.y;
+    Vector3f::new(r * phi.cos(), r * phi.sin(), z)
+}
+pub fn cosine_sample_hemisphere(u: Point2f) -> (Vector3f, Float) {
+    let d = concentric_sample_disk(u);
+    let z = (1. - d.coords.magnitude_squared()).sqrt();
+    (Vector3f::new(d.x, d.y, z), z * INV_PI)
+}
+
+pub fn uniform_sample_triangle(u: Point2f) -> Point2f {
+    let su0 = u.x.sqrt();
+    Point2f::new(1. - su0, u.y * su0)
+}
+
+pub fn has_nan(p: &Point3f) -> bool {
+    if p.x.is_nan() || p.y.is_nan() || p.z.is_nan() {
+        return true;
+    }
+    false
+}
+
+pub fn spherical_to_normalize_phi_theta(w: &Vector3f) -> Point2f {
+    let p = w.y.atan2(w.x);
+    Point2f::new(
+        if p < 0. { p + 2. * PI } else { p } / 2. * INV_PI,
+        clamp(w.z, -1., 1.).acos() * INV_PI,
+    )
+}
+
+pub fn normalize_phi_theta_to_spherical(phi_theta: &Point2f) -> Vector3f {
+    let theta = phi_theta.y * PI;
+    let phi = phi_theta.x * PI * 2.;
+    let cos_theta = theta.cos();
+    let sin_theta = theta.sin();
+    let cos_phi = phi.cos();
+    let sin_phi = phi.sin();
+    Vector3f::new(
+        sin_theta * cos_phi,
+        sin_theta * sin_phi,
+        cos_theta
+    )
 }
 #[allow(clippy::excessive_precision)]
 pub const INV_PI: Float = 0.31830988618379067154;

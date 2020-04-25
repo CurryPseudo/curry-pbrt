@@ -4,7 +4,7 @@ use std::any::Any;
 use std::sync::Arc;
 use std::collections::HashMap;
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct AnyHashMap<K>(HashMap<K, Arc<dyn Any + 'static + Send + Sync>>);
 
 impl<K: Eq + Hash> AnyHashMap<K> {

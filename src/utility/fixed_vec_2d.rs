@@ -1,8 +1,8 @@
-use std::collections::VecDeque;
 use crate::*;
+use std::collections::VecDeque;
 use std::ops::Index;
 use std::ops::IndexMut;
-#[derive(Debug)]
+#[derive(Debug, Clone, Default)]
 pub struct FixedVec2D<T> {
     row_size: usize,
     vec: Vec<T>,
@@ -27,11 +27,28 @@ impl<T: Clone> FixedVec2D<T> {
         }
         r
     }
+    pub fn map<U, F: Fn(T) -> U>(self, f: F) -> FixedVec2D<U> {
+        FixedVec2D {
+            row_size: self.row_size,
+            vec: self.vec.into_iter().map(f).collect(),
+        }
+    }
 }
 
 impl<T> FixedVec2D<T> {
     pub fn size(&self) -> Vector2u {
         Vector2u::new(self.row_size, self.vec.len() / self.row_size)
+    }
+    pub fn enumerate(&self) -> Vec<(Point2u, &T)> {
+        let size = self.size();
+        let mut r = Vec::new();
+        for j in 0..size.y {
+            for i in 0..size.x {
+                let p = Point2u::new(i, j);
+                r.push((p, &self[p]))
+            }
+        }
+        r
     }
 }
 
@@ -66,4 +83,3 @@ impl<T> IntoIterator for FixedVec2D<T> {
     type IntoIter = std::vec::IntoIter<T>;
     type Item = T;
 }
-

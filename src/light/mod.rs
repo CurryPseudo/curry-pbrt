@@ -1,10 +1,12 @@
 mod area;
 mod distant;
+mod infinite_area;
 mod point;
 use crate::*;
 
 pub use area::*;
 pub use distant::*;
+pub use infinite_area::*;
 pub use point::*;
 use std::sync::Arc;
 
@@ -17,7 +19,15 @@ pub trait Light: Sync + Send {
     fn le_out_scene(&self, _: &Ray) -> Option<Spectrum> {
         None
     }
-    fn pdf(&self, point: &Point3f, shape_point: &ShapePoint) -> Float;
+    fn out_scene_pdf(&self, _: &Ray) -> Float {
+        0.
+    }
+    fn le_out_scene_pdf(&self, ray: &Ray) -> (Option<Spectrum>, Float) {
+        (self.le_out_scene(ray), self.out_scene_pdf(ray))
+    }
+    fn pdf(&self, _: &Point3f, _: &ShapePoint) -> Float {
+        0.
+    }
     fn box_apply(&self, transform: &Transform) -> Box<dyn Light>;
     fn is_delta(&self) -> bool {
         false
@@ -45,13 +55,15 @@ pub fn parse_light(property_set: &PropertySet) -> Box<dyn Light> {
                 });
             Box::new(DistantLight::new(w, i))
         }
+        "infinite" => {
+            let map = property_set.get_value("mapname").unwrap_or_else(|| constant_texture(Spectrum::new(1.)));
+            Box::new(InfiniteAreaLight::new(map))
+        }
         _ => panic!(),
     }
 }
 pub type AreaLightFactory = Arc<dyn Fn(Arc<dyn Shape>) -> Box<dyn Light>>;
-pub fn parse_area_light(
-    property_set: &PropertySet,
-) -> AreaLightFactory {
+pub fn parse_area_light(property_set: &PropertySet) -> AreaLightFactory {
     match property_set.get_name().unwrap() {
         "diffuse" => {
             let l = property_set.get_default("L");
