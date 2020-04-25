@@ -2,6 +2,9 @@ use crate::*;
 use alga::general::{ClosedAdd, ClosedDiv, ClosedMul, ClosedSub};
 use num_traits::FromPrimitive;
 
+mod distribution;
+pub use distribution::*;
+
 pub fn lerp<T: FromPrimitive + ClosedMul + ClosedAdd + ClosedSub + Copy>(
     t: T,
     min: T,
@@ -88,23 +91,7 @@ pub fn sample_distribution_1d_remap(
     len: usize,
     f: &dyn Fn(usize) -> Float,
 ) -> (usize, Float, Float) {
-    assert!(len != 0);
-    if len == 1 {
-        return (0, 1., u);
-    }
-    let mut cdf: Vec<Float> = Vec::new();
-    for i in 0..len {
-        let x = f(i);
-        cdf.push(cdf.last().unwrap_or(&0.) + x);
-    }
-    let sum = cdf.last().unwrap();
-    for (i, cdf) in cdf.iter().enumerate() {
-        if u * sum <= *cdf {
-            let pdf = f(i) / sum;
-            return (i, pdf, (cdf - u * sum) / f(i));
-        }
-    }
-    (len - 1, f(len - 1) / sum, 1.)
+    Distribution1D::new(f, len).sample_remap(u)
 }
 #[allow(clippy::excessive_precision)]
 pub const INV_PI: Float = 0.31830988618379067154;

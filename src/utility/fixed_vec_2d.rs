@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use crate::*;
 use std::ops::Index;
 use std::ops::IndexMut;
@@ -16,6 +17,15 @@ impl<T: Clone> FixedVec2D<T> {
     }
     pub fn from_vec(vec: Vec<T>, row_size: usize) -> Self {
         Self { row_size, vec }
+    }
+    pub fn into_rows(self) -> Vec<Vec<T>> {
+        let row_size = self.row_size;
+        let mut vec: VecDeque<T> = self.vec.into();
+        let mut r = Vec::new();
+        for _ in 0..vec.len() / row_size {
+            r.push(vec.drain(0..row_size).collect());
+        }
+        r
     }
 }
 
@@ -56,3 +66,4 @@ impl<T> IntoIterator for FixedVec2D<T> {
     type IntoIter = std::vec::IntoIter<T>;
     type Item = T;
 }
+
