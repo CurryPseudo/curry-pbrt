@@ -1,6 +1,6 @@
 use crate::*;
 use std::sync::Arc;
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UberMaterial {
     pub kd: Arc<dyn Texture<Spectrum>>,
     pub ks: Arc<dyn Texture<Spectrum>>,
@@ -61,6 +61,6 @@ impl Material for UberMaterial {
         bsdf
     }
     fn box_clone(&self) -> Box<(dyn Material + 'static)> {
-        todo!()
+        Box::new(self.clone())
     }
 }
