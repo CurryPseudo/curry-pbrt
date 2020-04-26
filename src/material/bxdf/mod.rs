@@ -1,8 +1,10 @@
 mod lambertian;
+mod microfacet;
 mod oren_nayar;
 mod specular;
 use crate::*;
 pub use lambertian::*;
+pub use microfacet::*;
 pub use oren_nayar::*;
 pub use specular::*;
 use std::sync::Arc;
@@ -22,56 +24,6 @@ pub trait BxDF {
     }
     fn f_pdf(&self, wo: &Vector3f, wi: &Vector3f) -> (Option<Spectrum>, Float) {
         (self.f(wo, wi), self.pdf(wo, wi))
-    }
-    fn cos_theta(&self, w: &Vector3f) -> Float {
-        w.z
-    }
-    fn cos_2_theta(&self, w: &Vector3f) -> Float {
-        w.z * w.z
-    }
-    fn sin_2_theta(&self, w: &Vector3f) -> Float {
-        1. - self.cos_2_theta(w)
-    }
-    fn sin_theta(&self, w: &Vector3f) -> Float {
-        self.sin_2_theta(w).sqrt()
-    }
-    fn tan_theta(&self, w: &Vector3f) -> Float {
-        self.sin_theta(w) / self.cos_theta(w)
-    }
-    fn tan_2_theta(&self, w: &Vector3f) -> Float {
-        self.sin_2_theta(w) / self.cos_2_theta(w)
-    }
-    fn cos_phi(&self, w: &Vector3f) -> Float {
-        let sin_theta = self.sin_theta(w);
-        if sin_theta == 0. {
-            1.
-        } else {
-            clamp(w.x / sin_theta, -1., 1.)
-        }
-    }
-    fn sin_phi(&self, w: &Vector3f) -> Float {
-        let sin_theta = self.sin_theta(w);
-        if sin_theta == 0. {
-            1.
-        } else {
-            clamp(w.y / sin_theta, -1., 1.)
-        }
-    }
-    fn cos_2_phi(&self, w: &Vector3f) -> Float {
-        let cos_phi = self.cos_phi(w);
-        cos_phi * cos_phi
-    }
-    fn sin_2_phi(&self, w: &Vector3f) -> Float {
-        let sin_phi = self.sin_phi(w);
-        sin_phi * sin_phi
-    }
-    fn cos_delta_phi(&self, wa: &Vector3f, wb: &Vector3f) -> Float {
-        clamp(
-            (wa.x * wb.x + wa.y * wb.y)
-                / ((wa.x * wa.x + wa.y * wa.y) * (wb.x * wb.x + wb.y * wb.y)).sqrt(),
-            -1.,
-            1.,
-        )
     }
 }
 
@@ -134,19 +86,10 @@ impl BSDF {
     ) -> (Vector3f, Option<Spectrum>, Float) {
         let choose_bxdf = &self.bxdfs[index];
         let wo_local = self.world_to_local(wo);
-        let (wi_local, f, mut pdf) = choose_bxdf.sample_f(&wo_local, u);
-        let mut f: Spectrum = f.into();
-        for i in 0..self.bxdfs.len() {
-            if i != index {
-                let (bxdf_f, bxdf_pdf) = self.bxdfs[i].f_pdf(&wo_local, &wi_local);
-                f += bxdf_f;
-                pdf += bxdf_pdf;
-            }
-        }
+        let (wi_local, f, pdf) = choose_bxdf.sample_f(&wo_local, u);
+        let wi = self.local_to_world(&wi_local);
         let bxdfs_len_f = self.bxdfs.len() as Float;
-        f /= bxdfs_len_f;
-        pdf /= bxdfs_len_f;
-        (self.local_to_world(&wi_local), f.to_option(), pdf)
+        (wi, f, pdf / bxdfs_len_f)
     }
     pub fn sample_no_delta_f(
         &self,
@@ -189,7 +132,8 @@ impl BSDF {
                 pdf += this_pdf;
             }
         }
-        (f, pdf)
+        let len = self.bxdfs.len() as Float;
+        (f, pdf / len)
     }
     pub fn sample_f(
         &self,

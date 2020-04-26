@@ -17,14 +17,14 @@ impl OrenNayar {
 
 impl BxDF for OrenNayar {
     fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Option<Spectrum> {
-        let (sin_alpha, tan_beta) = if self.cos_theta(wi) < self.cos_theta(wo) {
+        let (sin_alpha, tan_beta) = if cos_theta(wi) < cos_theta(wo) {
             // theta_i > theta_o, alpha = theta_i, beta = theta_o
-            (self.sin_theta(wi), self.tan_theta(wo))
+            (sin_theta(wi), tan_theta(wo))
         }
         else {
             // theta_i <= theta_o, alpha = theta_o, beta = theta_i
-            (self.sin_theta(wo), self.tan_theta(wi))
+            (sin_theta(wo), tan_theta(wi))
         };
-        Some(self.r * ((self.a + self.b * max(0., self.cos_delta_phi(wi, wo)) * sin_alpha * tan_beta) / PI))
+        Some(self.r * ((self.a + self.b * max(0., cos_delta_phi(wi, wo)) * sin_alpha * tan_beta) / PI))
     }
 }

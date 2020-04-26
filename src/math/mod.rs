@@ -147,10 +147,56 @@ pub fn normalize_phi_theta_to_spherical(phi_theta: &Point2f) -> Vector3f {
     let sin_theta = theta.sin();
     let cos_phi = phi.cos();
     let sin_phi = phi.sin();
-    Vector3f::new(
-        sin_theta * cos_phi,
-        sin_theta * sin_phi,
-        cos_theta
+    Vector3f::new(sin_theta * cos_phi, sin_theta * sin_phi, cos_theta)
+}
+pub fn cos_theta(w: &Vector3f) -> Float {
+    w.z
+}
+pub fn cos_2_theta(w: &Vector3f) -> Float {
+    w.z * w.z
+}
+pub fn sin_2_theta(w: &Vector3f) -> Float {
+    max(1. - cos_2_theta(w), 0.)
+}
+pub fn sin_theta(w: &Vector3f) -> Float {
+    sin_2_theta(w).sqrt()
+}
+pub fn tan_theta(w: &Vector3f) -> Float {
+    sin_theta(w) / cos_theta(w)
+}
+pub fn tan_2_theta(w: &Vector3f) -> Float {
+    sin_2_theta(w) / cos_2_theta(w)
+}
+pub fn cos_phi(w: &Vector3f) -> Float {
+    let sin_theta = sin_theta(w);
+    if sin_theta == 0. {
+        1.
+    } else {
+        clamp(w.x / sin_theta, -1., 1.)
+    }
+}
+pub fn sin_phi(w: &Vector3f) -> Float {
+    let sin_theta = sin_theta(w);
+    if sin_theta == 0. {
+        0.
+    } else {
+        clamp(w.y / sin_theta, -1., 1.)
+    }
+}
+pub fn cos_2_phi(w: &Vector3f) -> Float {
+    let cos_phi = cos_phi(w);
+    cos_phi * cos_phi
+}
+pub fn sin_2_phi(w: &Vector3f) -> Float {
+    let sin_phi = sin_phi(w);
+    sin_phi * sin_phi
+}
+pub fn cos_delta_phi(wa: &Vector3f, wb: &Vector3f) -> Float {
+    clamp(
+        (wa.x * wb.x + wa.y * wb.y)
+            / ((wa.x * wa.x + wa.y * wa.y) * (wb.x * wb.x + wb.y * wb.y)).sqrt(),
+        -1.,
+        1.,
     )
 }
 #[allow(clippy::excessive_precision)]

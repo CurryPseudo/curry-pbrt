@@ -56,7 +56,7 @@ impl SpecularReflection {
 impl DeltaBxDF for SpecularReflection {
     fn sample_f(&self, wo: &Vector3f) -> Option<(Vector3f, Spectrum)> {
         let wi = Vector3f::new(-wo.x, -wo.y, wo.z);
-        let cos_theta_i = self.cos_theta(&wi);
+        let cos_theta_i = cos_theta(&wi);
         let fresnel_r = self.fresnel.evaluate(cos_theta_i);
         if fresnel_r == 0. {
             return None;
@@ -86,8 +86,8 @@ impl SpecularTransmission {
 
 impl DeltaBxDF for SpecularTransmission {
     fn sample_f(&self, wo: &Vector3f) -> Option<(Vector3f, Spectrum)> {
-        let cos_theta_o = self.cos_theta(wo);
-        let (eta_i, eta_t) = if self.cos_theta(wo) > 0. {
+        let cos_theta_o = cos_theta(wo);
+        let (eta_i, eta_t) = if cos_theta(wo) > 0. {
             (self.eta_a, self.eta_b)
         } else {
             (self.eta_b, self.eta_a)
@@ -102,11 +102,11 @@ impl DeltaBxDF for SpecularTransmission {
         }
         let cos_theta_i = (1. - sin_2_theta_i).sqrt();
         let wi = eta * (-wo) + (eta * cos_theta_o - cos_theta_i) * n;
-        let fresnel_t = 1. - self.fresnel.evaluate(self.cos_theta(&wi));
+        let fresnel_t = 1. - self.fresnel.evaluate(cos_theta(&wi));
         if fresnel_t == 0. {
             None
         } else {
-            Some((wi, self.t * fresnel_t / self.cos_theta(&wi).abs()))
+            Some((wi, self.t * fresnel_t / cos_theta(&wi).abs()))
         }
     }
 }

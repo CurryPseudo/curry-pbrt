@@ -22,19 +22,19 @@ AttributeBegin
 
    # Translate 278 548.7 279.5
    # Shape "sphere" "float radius" [60]
-   AttributeBegin
-   AreaLightSource "diffuse" "spectrum L" [400.0 0.0 500.0 8.0 600.0 15.6 700.0 18.4]
-   Translate 100 0 -100
-   Shape "trianglemesh"
-   "integer indices" [ 0 1 2  2 3 0 ]
-   "point P" [
-      343.0 548.7 227.0
-      343.0 548.7 332.0
-      213.0 548.7 332.0
-      213.0 548.7 227.0 ]
-   AttributeEnd
+   # AttributeBegin
+   # AreaLightSource "diffuse" "spectrum L" [400.0 0.0 500.0 8.0 600.0 15.6 700.0 18.4]
+   # Translate 100 0 -100
+   # Shape "trianglemesh"
+   # "integer indices" [ 0 1 2  2 3 0 ]
+   # "point P" [
+   #    343.0 548.7 227.0
+   #    343.0 548.7 332.0
+   #    213.0 548.7 332.0
+   #    213.0 548.7 227.0 ]
+   # AttributeEnd
 
-   Translate -100 0 100
+   # Translate -100 0 100
    Shape "trianglemesh"
    "integer indices" [ 0 1 2  2 3 0 ]
    "point P" [
@@ -213,7 +213,7 @@ AttributeEnd
 #
 
 AttributeBegin
-   Material "mirror"
+   Material "uber" 
    Shape "trianglemesh"
    "integer indices" [
       3 2 0 2 1 0
