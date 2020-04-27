@@ -130,14 +130,20 @@ impl SceneParseStack {
                 self.transform = Some(Transform::parse_from_segment(segment).unwrap());
             }
             _ => {
-                let this_transform = Transform::parse_from_segment(segment).unwrap();
-                self.transform = Some(
-                    self.transform
-                        .clone()
-                        .map_or(this_transform.clone(), |transform| {
-                            transform.apply(&this_transform)
-                        }),
-                );
+                if let Some(this_transform) = Transform::parse_from_segment(segment) {
+                    self.transform = Some(
+                        self.transform
+                            .clone()
+                            .map_or(this_transform.clone(), |transform| {
+                                transform.apply(&this_transform)
+                            }),
+                    );
+                }
+                else {
+                    error!("Parsing scene error");
+                    error!("object_type {}", object_type);
+                    error!("property_set {:#?}", property_set);
+                }
             }
         }
     }

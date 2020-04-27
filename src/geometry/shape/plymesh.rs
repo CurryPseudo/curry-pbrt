@@ -10,6 +10,7 @@ lazy_static! {
         Mutex::new(HashMap::new());
 }
 pub fn create_plymesh(path: &std::path::Path) -> Vec<Arc<dyn Shape>> {
+    return Vec::new();
     PLYMESH_CACHE
         .lock()
         .unwrap()
