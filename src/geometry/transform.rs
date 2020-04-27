@@ -188,6 +188,7 @@ impl ParseFromBlockSegment for Transform {
                 property_set.get_no_type_value().unwrap(),
                 property_set.get_no_type_value().unwrap(),
             )),
+            "Scale" => Some(Transform::scale(property_set.get_no_type_value().unwrap())),
             "LookAt" => Some(Transform::look_at(
                 property_set.get_no_type_value().unwrap(),
                 property_set.get_no_type_value().unwrap(),
