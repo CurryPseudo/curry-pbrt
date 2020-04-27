@@ -107,8 +107,8 @@ impl ShapePoint {
         Self { p, n, uv, p_error }
     }
     pub fn point_offset_by_error(&self, w: &Vector3f) -> Point3f {
-        let d: Float = self.n.as_vector().abs().dot(&self.p_error);
-        let mut offset: Vector3f = self.n.as_vector() * d;
+        let d: Float = self.n.as_ref().abs().dot(&self.p_error);
+        let mut offset: Vector3f = self.n.as_ref() * d;
         if w.dot(&self.n) < 0. {
             offset = -offset;
         }

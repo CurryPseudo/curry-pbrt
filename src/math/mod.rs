@@ -199,6 +199,16 @@ pub fn cos_delta_phi(wa: &Vector3f, wb: &Vector3f) -> Float {
         1.,
     )
 }
+pub fn refract(wo: &Vector3f, n: &Normal3f, eta: Float) -> Option<Vector3f> {
+    let cos_theta_o = wo.dot(n);
+    let sin_2_theta_o = 1. - cos_theta_o * cos_theta_o;
+    let sin_2_theta_i = sin_2_theta_o * eta * eta;
+    if sin_2_theta_i > 1. {
+        return None;
+    }
+    let cos_theta_i = max(1. - sin_2_theta_i, 0.).sqrt();
+    Some(eta * (-wo) + (eta * cos_theta_o - cos_theta_i) * n.as_ref())
+}
 #[allow(clippy::excessive_precision)]
 pub const INV_PI: Float = 0.31830988618379067154;
 

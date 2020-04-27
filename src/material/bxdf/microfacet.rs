@@ -12,6 +12,7 @@ pub trait MicrofacetDistribution {
     fn sample_wh(&self, wo: &Vector3f, u: &Point2f) -> (Vector3f, Float);
 }
 
+#[derive(Clone, Copy)]
 pub struct TrowbridgeReitzDistribution {
     alpha_x: Float,
     alpha_y: Float,
@@ -175,5 +176,92 @@ impl BxDF for MicrofacetReflection {
             return (Vector3f::new(0., 0., 0.), None, 0.);
         }
         (wi, self.f(wo, &wi), pdf / (4. * wo.dot(&wh)))
+    }
+}
+
+pub struct MicrofacetTransmission {
+    t: Spectrum,
+    distribution: Box<dyn MicrofacetDistribution>,
+    eta_a: Float,
+    eta_b: Float,
+    fresnel: FresnelDielectric,
+}
+impl MicrofacetTransmission {
+    pub fn new<D: MicrofacetDistribution + 'static>(
+        t: Spectrum,
+        distribution: D,
+        eta_a: Float,
+        eta_b: Float,
+    ) -> Self {
+        Self {
+            t,
+            distribution: Box::new(distribution),
+            eta_a,
+            eta_b,
+            fresnel: FresnelDielectric::new(eta_a, eta_b),
+        }
+    }
+}
+
+impl BxDF for MicrofacetTransmission {
+    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Option<RGBSpectrum> {
+        if wo.z * wi.z > 0. {
+            return None;
+        }
+        let cos_theta_o = cos_theta(wo);
+        let cos_theta_i = cos_theta(wi);
+        if cos_theta_i == 0. || cos_theta_o == 0. {
+            return None;
+        }
+        let eta = if cos_theta(wo) > 0. {
+            self.eta_b / self.eta_a
+        } else {
+            self.eta_a / self.eta_b
+        };
+        let mut wh = (wo + wi * eta).normalize();
+        if wh.z < 0. {
+            wh = -wh;
+        }
+        let sqrt_denom = wo.dot(&wh) + eta * wi.dot(&wh);
+        let f = self.fresnel.evaluate(wo.dot(&wh));
+        let factor = 1. / eta;
+        Some(
+            (Spectrum::new(1.) - f)
+                * self.t
+                * (self.distribution.d(&wh)
+                    * self.distribution.g(wo, wi)
+                    * eta
+                    * eta
+                    * wi.dot(&wh).abs()
+                    * wo.dot(&wh).abs()
+                    * factor
+                    * factor
+                    / (cos_theta_i * cos_theta_o * sqrt_denom * sqrt_denom))
+                    .abs(),
+        )
+    }
+    fn bxdf_type(&self) -> BxDFType {
+        BxDFType::Transmit
+    }
+    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> (Vector3f, Option<Spectrum>, Float) {
+        if wo.z == 0. {
+            return (Vector3f::new(0., 0., 0.), None, 0.);
+        }
+        let (wh, pdf) = self.distribution.sample_wh(wo, u);
+        if wo.dot(&wh) < 0. {
+            return (Vector3f::new(0., 0., 0.), None, 0.);
+        }
+        let (eta_i, eta_o)  = if cos_theta(wo) > 0. {
+            (self.eta_a / self.eta_b, self.eta_b / self.eta_a)
+        } else {
+            (self.eta_b / self.eta_a, self.eta_a / self.eta_b)
+        };
+        if let Some(wi) = refract(wo, &wh.into(), eta_i) {
+            let sqrt_denom = wo.dot(&wh) + eta_o * wi.dot(&wh);
+            let dwh_dwi = (eta_o * eta_o * wi.dot(&wh)).abs() / (sqrt_denom * sqrt_denom);
+            (wi, self.f(wo, &wi), pdf * dwh_dwi)
+        } else {
+            (Vector3f::new(0., 0., 0.), None, 0.)
+        }
     }
 }

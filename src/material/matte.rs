@@ -19,7 +19,7 @@ impl Material for MatteMaterial {
         let sigma = clamp(self.sigma.evaluate(shape_intersect.get_uv()), 0., 90.);
         let mut bsdf = BSDF::new(*shape_intersect.get_normal(), *shape_intersect.get_normal());
         if sigma == 0. {
-            bsdf.add_bxdf(Arc::new(Lambertian::new(kd)));
+            bsdf.add_bxdf(Arc::new(LambertianReflection::new(kd)));
         }
         else {
             bsdf.add_bxdf(Arc::new(OrenNayar::new(kd, sigma)))

@@ -9,13 +9,29 @@ pub use oren_nayar::*;
 pub use specular::*;
 use std::sync::Arc;
 
+pub enum BxDFType {
+    Delta,
+    Reflect,
+    Transmit,
+}
+
 pub trait BxDF {
     fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Option<Spectrum>;
     fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> (Vector3f, Option<Spectrum>, Float) {
         let (mut wi, pdf) = cosine_sample_hemisphere(*u);
-        if wo.z < 0. {
-            wi.z *= -1.;
-        }
+        match self.bxdf_type() {
+            BxDFType::Reflect => {
+                if wo.z < 0. {
+                    wi.z *= -1.;
+                }
+            }
+            BxDFType::Transmit => {
+                if wo.z > 0. {
+                    wi.z *= -1.;
+                }
+            }
+            _ => ()
+        };
         let f = self.f(wo, &wi);
         (wi, f, pdf)
     }
@@ -25,14 +41,19 @@ pub trait BxDF {
     fn f_pdf(&self, wo: &Vector3f, wi: &Vector3f) -> (Option<Spectrum>, Float) {
         (self.f(wo, wi), self.pdf(wo, wi))
     }
+    fn bxdf_type(&self) -> BxDFType {
+        BxDFType::Reflect
+    }
 }
 
 pub struct BSDF {
-    _n: Vector3f,
+    n: Vector3f,
     sn: Vector3f,
     snx: Vector3f,
     sny: Vector3f,
     bxdfs: Vec<Arc<dyn BxDF>>,
+    reflect_bxdfs: Vec<Arc<dyn BxDF>>,
+    transmit_bxdfs: Vec<Arc<dyn BxDF>>,
     delta_bxdfs: Vec<Arc<dyn DeltaBxDF>>,
 }
 
@@ -42,11 +63,13 @@ impl BSDF {
         let (snx, sny) = coordinate_system(&sn);
         let n = n.x * snx + n.y * sny + n.z * sn;
         Self {
-            _n: n,
+            n,
             sn,
             snx,
             sny,
             bxdfs: Vec::new(),
+            reflect_bxdfs: Vec::new(),
+            transmit_bxdfs: Vec::new(),
             delta_bxdfs: Vec::new(),
         }
     }
@@ -58,13 +81,22 @@ impl BSDF {
             snx.x * w.x + sny.x * w.y + sn.x * w.z,
             snx.y * w.x + sny.y * w.y + sn.y * w.z,
             snx.z * w.x + sny.z * w.y + sn.z * w.z,
-        )
+        ).normalize()
     }
     fn world_to_local(&self, w: &Vector3f) -> Vector3f {
-        Vector3f::new(w.dot(&self.snx), w.dot(&self.sny), w.dot(&self.sn))
+        Vector3f::new(w.dot(&self.snx), w.dot(&self.sny), w.dot(&self.sn)).normalize()
     }
     pub fn add_bxdf<T: BxDF + 'static>(&mut self, bxdf: Arc<T>) {
-        self.bxdfs.push(bxdf);
+        self.bxdfs.push(bxdf.clone());
+        match bxdf.bxdf_type() {
+            BxDFType::Reflect => {
+                self.reflect_bxdfs.push(bxdf);
+            }
+            BxDFType::Transmit => {
+                self.transmit_bxdfs.push(bxdf);
+            }
+            BxDFType::Delta => panic!(),
+        }
     }
     pub fn add_delta_bxdf<T: DeltaBxDF + BxDF + 'static>(&mut self, delta_bxdf: Arc<T>) {
         self.delta_bxdfs.push(delta_bxdf);
@@ -124,15 +156,21 @@ impl BSDF {
         }
         let wo = self.world_to_local(wo);
         let wi = self.world_to_local(wi);
+        let reflect = wo.z * wi.z > 0.;
         let mut f = None;
         let mut pdf = 0.;
-        for bxdf in &self.bxdfs {
+        let bxdfs = if reflect {
+            &self.reflect_bxdfs
+        } else {
+            &self.transmit_bxdfs
+        };
+        for bxdf in bxdfs {
             if let (Some(this_f), this_pdf) = bxdf.f_pdf(&wo, &wi) {
                 f = Some(f.unwrap_or_else(|| Spectrum::new(0.)) + this_f);
                 pdf += this_pdf;
             }
         }
-        let len = self.bxdfs.len() as Float;
+        let len = bxdfs.len() as Float;
         (f, pdf / len)
     }
     pub fn sample_f(
@@ -173,5 +211,8 @@ impl<T: DeltaBxDF> BxDF for T {
     }
     fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Option<Spectrum> {
         None
+    }
+    fn bxdf_type(&self) -> BxDFType {
+        BxDFType::Delta
     }
 }

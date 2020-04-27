@@ -173,6 +173,8 @@ AttributeEnd
 # material { glass ior 1.5 r { constant spd { 1 0.95 } } }
 
 AttributeBegin
+   Material "translucent" "rgb Kd" [0.5 0.5 0.5] "rgb Ks" [0.5 0.5 0.5]
+   #Material "translucent"
    Shape "trianglemesh"
    "integer indices" [
       3 2 0 2 1 0

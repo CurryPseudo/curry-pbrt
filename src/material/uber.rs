@@ -24,7 +24,7 @@ impl Material for UberMaterial {
         }
         let kd = opacity * self.kd.evaluate(uv);
         if !kd.is_black() {
-            bsdf.add_bxdf(Arc::new(Lambertian::new(kd)));
+            bsdf.add_bxdf(Arc::new(LambertianReflection::new(kd)));
         }
 
         let ks = opacity * self.ks.evaluate(uv);
