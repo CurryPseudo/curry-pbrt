@@ -33,14 +33,32 @@ struct SceneParseStack {
     area_light_factory: Option<AreaLightFactory>,
     texture_map: texture_map::TextureMap,
     named_material: HashMap<String, Arc<dyn Material>>,
+    object_name: Option<String>,
 }
 
 impl SceneParseStack {
-    pub fn parse(&mut self, segment: &BlockSegment, scene: &mut Scene) {
-        if let Some((_, segments)) = segment.get_block("Attribute") {
-            let mut attribute_stack = self.clone();
-            for segment in segments {
-                attribute_stack.parse(segment, scene);
+    pub fn parse(
+        &mut self,
+        segment: &BlockSegment,
+        scene: &mut Scene,
+        objects: &mut HashMap<String, Vec<Primitive>>,
+    ) {
+        if let Some((block_type, block_name, segments)) = segment.as_block() {
+            match block_type {
+                "Attribute" => {
+                    let mut attribute_stack = self.clone();
+                    for segment in segments {
+                        attribute_stack.parse(segment, scene, objects);
+                    }
+                }
+                "Object" => {
+                    let mut object_stack = self.clone();
+                    object_stack.object_name = Some(block_name.as_ref().unwrap().clone());
+                    for segment in segments {
+                        object_stack.parse(segment, scene, objects);
+                    }
+                }
+                _ => panic!(),
             }
             return;
         }
@@ -65,7 +83,6 @@ impl SceneParseStack {
                     if let Some(transform) = &self.transform {
                         shape = shape_apply(shape, transform);
                     }
-                    let shape: Arc<dyn Shape> = shape.into();
                     let primitive = if let Some(area_light_factory) = &self.area_light_factory {
                         let area_light: Arc<dyn Light> = area_light_factory(shape.clone()).into();
                         scene.lights.push(area_light.clone());
@@ -76,6 +93,24 @@ impl SceneParseStack {
                             PrimitiveSource::material(self.material.clone().unwrap()),
                         )
                     };
+                    if let Some(object_name) = &self.object_name {
+                        objects
+                            .entry(object_name.clone())
+                            .or_default()
+                            .push(primitive);
+                    }
+                    else {
+                        scene.aggregate.add_primitive(primitive);
+                    }
+                }
+            }
+            "ObjectInstance" => {
+                let object_name = property_set.get_name().unwrap();
+                for primitive in objects.get(object_name).unwrap() {
+                    let mut primitive = primitive.clone();
+                    if let Some(transform) = &self.transform {
+                        primitive = primitive.apply(transform);
+                    }
                     scene.aggregate.add_primitive(primitive);
                 }
             }
@@ -112,8 +147,9 @@ impl ParseFromBlockSegment for Scene {
         let (_, block_segments) = segment.get_block("World")?;
         let mut scene = Scene::default();
         let mut scene_parse_stack = SceneParseStack::default();
+        let mut objects = HashMap::new();
         for segment in block_segments {
-            scene_parse_stack.parse(segment, &mut scene);
+            scene_parse_stack.parse(segment, &mut scene, &mut objects);
         }
         Some(scene)
     }

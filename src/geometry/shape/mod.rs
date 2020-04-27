@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use crate::*;
 mod sphere;
 mod transform;
@@ -7,7 +8,7 @@ pub use sphere::*;
 pub use transform::*;
 pub use triangle::*;
 
-pub trait Shape: DowncastSync {
+pub trait Shape: DowncastSync + std::fmt::Debug {
     fn area(&self) -> Float;
     fn bound(&self) -> Bounds3f;
     fn sample(&self, sampler: &mut dyn Sampler) -> (ShapePoint, Float);
@@ -76,15 +77,14 @@ pub trait Shape: DowncastSync {
             false
         }
     }
-    fn box_clone(&self) -> Box<dyn Shape>;
 }
 
 impl_downcast!(sync Shape);
 
-pub fn shape_apply(shape: Box<dyn Shape>, transform: &Transform) -> Box<dyn Shape> {
-    match shape.downcast::<TransformShape>() {
-        Ok(transfrom_shape) => Box::new(transfrom_shape.apply(transform)),
-        Err(shape) => Box::new(TransformShape::from(shape).apply(transform)),
+pub fn shape_apply(shape: Arc<dyn Shape>, transform: &Transform) -> Arc<dyn Shape> {
+    match shape.downcast_arc::<TransformShape>() {
+        Ok(transfrom_shape) => Arc::new(transfrom_shape.as_ref().clone().apply(transform)),
+        Err(shape) => Arc::new(TransformShape::from(shape).apply(transform)),
     }
 }
 
@@ -185,11 +185,11 @@ impl Transformable for ShapeIntersect {
     }
 }
 
-pub fn parse_shape(property_set: &PropertySet) -> Vec<Box<dyn Shape>> {
+pub fn parse_shape(property_set: &PropertySet) -> Vec<Arc<dyn Shape>> {
     match property_set.get_name().unwrap() {
         "sphere" => {
             let radius = property_set.get_value("radius").unwrap_or(1.);
-            vec![Box::new(Sphere::new(radius))]
+            vec![Arc::new(Sphere::new(radius))]
         }
         "trianglemesh" => {
             let indices = property_set.get_value("indices").unwrap();

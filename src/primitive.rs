@@ -1,14 +1,14 @@
 use crate::*;
 use std::sync::Arc;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Primitive {
     bound: Bounds3f,
     shape: Arc<dyn Shape>,
     source: PrimitiveSource,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum PrimitiveSource {
     Material(Arc<dyn Material>),
     Light(Arc<dyn Light>),
@@ -40,7 +40,11 @@ impl PrimitiveSource {
 impl Primitive {
     pub fn new(shape: Arc<dyn Shape>, source: PrimitiveSource) -> Self {
         let bound = shape.bound();
-        Self { shape, source, bound }
+        Self {
+            shape,
+            source,
+            bound,
+        }
     }
 
     pub fn intersect_predicate(&self, ray: &Ray) -> bool {
@@ -98,5 +102,11 @@ impl PrimitiveIntersect {
     }
     pub fn get_light(&self) -> Option<Arc<dyn Light>> {
         self.primitive.source.get_light()
+    }
+}
+
+impl Transformable for Primitive {
+    fn apply(self, transform: &Transform) -> Self {
+        Self::new(shape_apply(self.shape, transform), self.source)
     }
 }

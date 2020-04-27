@@ -1,6 +1,6 @@
 use crate::*;
 use std::sync::Arc;
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct InfiniteAreaLight {
     map: Arc<dyn Texture<Spectrum>>,
     map_distribution: Distribution2D

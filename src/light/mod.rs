@@ -10,7 +10,7 @@ pub use infinite_area::*;
 pub use point::*;
 use std::sync::Arc;
 
-pub trait Light: Sync + Send {
+pub trait Light: Sync + Send + std::fmt::Debug {
     fn sample_li(
         &self,
         point: &ShapePoint,
@@ -77,7 +77,7 @@ pub trait DeltaLight: Clone + Transformable {
     fn sample_li(&self, point: &ShapePoint) -> (Vector3f, Option<Spectrum>, VisibilityTester);
     fn visibility_test_ray(&self, point: &Point3f, wi: &Vector3f) -> Ray;
 }
-impl<T: DeltaLight + 'static + Sync + Send> Light for T {
+impl<T: DeltaLight + 'static + Sync + Send + std::fmt::Debug> Light for T {
     fn box_apply(&self, transform: &Transform) -> Box<dyn Light> {
         Box::new(self.clone().apply(&transform))
     }

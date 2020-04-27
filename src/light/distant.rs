@@ -1,7 +1,7 @@
 use super::DeltaLight;
 use crate::*;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct DistantLight {
     w: Vector3f,
     i: Spectrum,

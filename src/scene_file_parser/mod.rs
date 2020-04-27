@@ -1,9 +1,9 @@
 pub mod lex;
 
-use std::path::PathBuf;
 use crate::*;
 use lex::{parse_lex, Token, TokenWithPos};
 use std::collections::VecDeque;
+use std::path::PathBuf;
 use std::{ops::Index, path::Path};
 
 #[derive(Debug)]
@@ -122,19 +122,25 @@ impl BlockSegment {
             _ => None,
         }
     }
-    pub fn get_block(&self, block_type: &str) -> Option<(&Option<String>, &Vec<BlockSegment>)> {
-        let block_type_ = block_type;
+    pub fn as_block(&self) -> Option<(&str, &Option<String>, &Vec<BlockSegment>)> {
         if let BlockSegment::Block {
             block_type,
             name,
             block_segments,
         } = self
         {
-            if block_type == block_type_ {
-                return Some((name, block_segments));
-            }
+            Some((block_type, name, block_segments))
+        } else {
+            None
         }
-        None
+    }
+    pub fn get_block(&self, block_type: &str) -> Option<(&Option<String>, &Vec<BlockSegment>)> {
+        let (block_type_, name, block_segments) = self.as_block()?;
+        if block_type == block_type_ {
+            Some((name, block_segments))
+        } else {
+            None
+        }
     }
 }
 
@@ -187,7 +193,7 @@ impl PropertySet {
         while size > 0 {
             let basic_type = self.0.pop_front()?.into_basic_types();
             for i in 0..min(size, basic_type.0.len()) {
-            basic_type_vec.push(basic_type.0[i].clone());
+                basic_type_vec.push(basic_type.0[i].clone());
             }
             size -= basic_type.0.len();
         }
@@ -254,7 +260,9 @@ impl Property {
                 // SingleString
                 let token_with_pos = tokens.pop_front().unwrap();
                 if let Token::String(s) = token_with_pos.token {
-                    Self::Value(BasicTypes(vec![BasicType::BasicString(s, token_with_pos.file)].into()))
+                    Self::Value(BasicTypes(
+                        vec![BasicType::BasicString(s, token_with_pos.file)].into(),
+                    ))
                 } else {
                     unreachable!()
                 }
@@ -288,8 +296,7 @@ impl BasicTypes {
     pub fn get_path(&self) -> Option<PathBuf> {
         if let BasicType::BasicString(s, file) = self.0.front()? {
             Some(file.as_path().parent().unwrap().join(s))
-        }
-        else {
+        } else {
             None
         }
     }

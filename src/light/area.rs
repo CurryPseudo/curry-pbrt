@@ -2,6 +2,7 @@ use super::Light;
 use crate::*;
 use std::sync::Arc;
 
+#[derive(Debug)]
 pub struct AreaLight {
     shape: Arc<dyn Shape>,
     le: Spectrum,

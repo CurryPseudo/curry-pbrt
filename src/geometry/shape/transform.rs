@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use super::{Shape, ShapeIntersect, ShapePoint};
 use crate::{
     def::Float,
@@ -5,15 +6,16 @@ use crate::{
     sampler::Sampler, Vector3f,
 };
 
+#[derive(Debug, Clone)]
 pub struct TransformShape {
-    shape: Box<dyn Shape>,
+    shape: Arc<dyn Shape>,
     transform: Transform,
     inverse_transform: Transform,
     bound: Bounds3f,
 }
 
-impl From<Box<dyn Shape>> for TransformShape {
-    fn from(shape: Box<dyn Shape>) -> Self {
+impl From<Arc<dyn Shape>> for TransformShape {
+    fn from(shape: Arc<dyn Shape>) -> Self {
         let bound = shape.bound();
         Self {
             shape,
@@ -25,9 +27,9 @@ impl From<Box<dyn Shape>> for TransformShape {
 }
 
 impl Transformable for TransformShape {
-    fn apply(self, transform: &Transform) -> Self {
-        let transform = self.transform.apply(transform);
-        let bound = self.bound.apply(&transform);
+    fn apply(self, transform_: &Transform) -> Self {
+        let transform = self.transform.apply(transform_);
+        let bound = self.bound.apply(transform_);
         let inverse_transform = transform.clone().inverse();
         Self {
             shape: self.shape,
@@ -71,14 +73,6 @@ impl Shape for TransformShape {
     }
     fn area(&self) -> Float {
         self.shape.area()
-    }
-    fn box_clone(&self) -> Box<dyn Shape> {
-        Box::new(Self {
-            shape: self.shape.box_clone(),
-            transform: self.transform.clone(),
-            inverse_transform: self.inverse_transform.clone(),
-            bound: self.bound.clone(),
-        })
     }
     fn default_sample_by_point(
         &self,

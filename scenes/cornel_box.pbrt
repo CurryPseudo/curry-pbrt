@@ -156,7 +156,6 @@ AttributeEnd
 #
 
 AttributeBegin
-   ConcatTransform [ 1. 0. 0. 30. 0. 1. 0. 0. 0. 0. 1. 0. 0. 0. 0. 1. ]
    Shape "trianglemesh"
    "integer indices" [ 0 1 2  2 3 0 ]
    "point P" [
@@ -174,6 +173,7 @@ AttributeEnd
 # material { glass ior 1.5 r { constant spd { 1 0.95 } } }
 
 AttributeBegin
+   ObjectBegin "ball_and_box"
    Material "translucent" "rgb Kd" [0.5 0.5 0.5] "rgb Ks" [0.5 0.5 0.5]
    #Material "translucent"
    Shape "trianglemesh"
@@ -208,8 +208,14 @@ AttributeBegin
 	Material "glass"
 	Translate 188 247.5 176.5
 	Shape "sphere" "float radius" [82.5]
+	ObjectEnd
 AttributeEnd
 
+AttributeBegin
+	ObjectInstance "ball_and_box"
+	Translate 100 0 0
+	ObjectInstance "ball_and_box"
+AttributeEnd
 
 #
 # tall block

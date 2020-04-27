@@ -2,7 +2,7 @@ use super::{Shape, ShapeIntersect, ShapePoint};
 use crate::*;
 use std::mem::swap;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Sphere {
     radius: f32,
 }
@@ -105,9 +105,6 @@ impl Shape for Sphere {
     }
     fn area(&self) -> Float {
         self.radius * self.radius * PI * 4.
-    }
-    fn box_clone(&self) -> Box<dyn Shape> {
-        Box::new(self.clone())
     }
 }
 

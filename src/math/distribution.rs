@@ -1,5 +1,5 @@
 use crate::*;
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Distribution1D {
     f_sum: Float,
     n: Float,
@@ -64,7 +64,7 @@ impl Distribution1D {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Distribution2D {
     rows: Vec<Distribution1D>,
     row_distribution: Distribution1D,

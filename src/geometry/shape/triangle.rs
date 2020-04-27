@@ -22,10 +22,10 @@ impl TriangleMesh {
     }
 }
 
-pub fn create_triangles(mesh: Arc<TriangleMesh>) -> Vec<Box<dyn Shape>> {
-    let mut r: Vec<Box<dyn Shape>> = Vec::new();
+pub fn create_triangles(mesh: Arc<TriangleMesh>) -> Vec<Arc<dyn Shape>> {
+    let mut r: Vec<Arc<dyn Shape>> = Vec::new();
     for i in 0..(mesh.n_indices / 3) {
-        r.push(Box::new(Triangle::new(mesh.clone(), i * 3)));
+        r.push(Arc::new(Triangle::new(mesh.clone(), i * 3)));
     }
     r
 }
@@ -271,8 +271,5 @@ impl Shape for Triangle {
         let p_error = gamma(7) * self.abs_sum(b0, b1, b2);
         let (p, n, uv) = self.shape_point_interpolate(b0, b1, b2);
         Some(ShapeIntersect::new(p, n, t, uv, p_error))
-    }
-    fn box_clone(&self) -> Box<dyn Shape> {
-        Box::new(self.clone())
     }
 }
