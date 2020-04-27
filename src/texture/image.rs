@@ -1,6 +1,10 @@
+use crate::texture::image::exr::ExrImageFileReader;
 use crate::*;
 use std::fs::File;
 use std::path::Path;
+mod png;
+mod exr;
+use crate::texture::image::png::PngImageFileReader;
 
 pub trait ImageTextureContent {
     fn default() -> Self;
@@ -51,23 +55,26 @@ impl<T: Clone + ImageTextureContent + Default> ImageTexture<T> {
         self.pixels = pixels.map(|t| t.apply_inverse_gamma_correct());
     }
 }
+
+pub trait ImageFileReader {
+    fn read_file(&self, file: File) -> (Vector2u, Vec<Spectrum>);
+}
 impl<T: Clone + ImageTextureContent> ImageTexture<T> {
-    pub fn from_file(file: &Path) -> Self {
-        if let Ok(file) = File::open(file) {
-            let decoder = png::Decoder::new(file);
-            let (info, mut reader) = decoder.read_info().unwrap();
-            let mut buf = vec![0; info.buffer_size()];
-            reader.next_frame(&mut buf).unwrap();
-            let resolution = Vector2u::new(info.width as usize, info.height as usize);
-            let mut vec = Vec::new();
-            for i in 0..buf.len() / 3 {
-                let mut rgb = Vec::new();
-                for j in 0..3 {
-                    rgb.push(buf[i * 3 + j] as Float / 255.);
+    pub fn from_file(file_path: &Path) -> Self {
+        if let Ok(file) = File::open(file_path) {
+            let image_file_reader: Box<dyn ImageFileReader> = match file_path.extension().unwrap().to_str().unwrap() {
+                "png" => {
+                    Box::new(PngImageFileReader {})
                 }
-                vec.push(T::from_rgb_spectrum(RGBSpectrum::from([
-                    rgb[0], rgb[1], rgb[2],
-                ])));
+                "exr" => {
+                    Box::new(ExrImageFileReader {})
+                }
+                _ => panic!()
+            };
+            let (resolution, buf) = image_file_reader.read_file(file);
+            let mut vec = Vec::new();
+            for spectrum in buf {
+                vec.push(T::from_rgb_spectrum(spectrum));
             }
             Self {
                 pixels: FixedVec2D::from_vec(vec, resolution.x),
@@ -97,3 +104,4 @@ impl<T: ImageTextureContent + Clone + std::marker::Sync + std::marker::Send + st
         self.pixels.clone()
     }
 }
+

@@ -105,12 +105,14 @@ impl SceneParseStack {
             }
             "ObjectInstance" => {
                 let object_name = property_set.get_name().unwrap();
-                for primitive in objects.get(object_name).unwrap() {
-                    let mut primitive = primitive.clone();
-                    if let Some(transform) = &self.transform {
-                        primitive = primitive.apply(transform);
+                if let Some(primitives) = objects.get(object_name) {
+                    for primitive in primitives {
+                        let mut primitive = primitive.clone();
+                        if let Some(transform) = &self.transform {
+                            primitive = primitive.apply(transform);
+                        }
+                        scene.aggregate.add_primitive(primitive);
                     }
-                    scene.aggregate.add_primitive(primitive);
                 }
             }
             "LightSource" => {
@@ -138,8 +140,7 @@ impl SceneParseStack {
                                 transform.apply(&this_transform)
                             }),
                     );
-                }
-                else {
+                } else {
                     error!("Parsing scene error");
                     error!("object_type {}", object_type);
                     error!("property_set {:#?}", property_set);

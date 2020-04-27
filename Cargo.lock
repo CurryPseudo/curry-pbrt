@@ -217,6 +217,7 @@ dependencies = [
  "log",
  "nalgebra",
  "num-traits",
+ "openexr",
  "ordered-float",
  "ply-rs",
  "png",
@@ -318,6 +319,12 @@ name = "glob"
 version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8be18de09a56b60ed0edf84bc9df007e30040691af7acd1c41874faac5895bfb"
+
+[[package]]
+name = "half"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f36b5f248235f45773d4944f555f83ea61fe07b18b561ccf99d7483d7381e54d"
 
 [[package]]
 name = "hermit-abi"
@@ -512,6 +519,28 @@ name = "number_prefix"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "17b02fc0ff9a9e4b35b3342880f48e896ebf69f2967921fe8646bf5b7125956a"
+
+[[package]]
+name = "openexr"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f9e3b9ae4f3eec70bc20117e11b24dd3acd629707a0a96d07f78b02910f0f480"
+dependencies = [
+ "half",
+ "libc",
+ "openexr-sys",
+]
+
+[[package]]
+name = "openexr-sys"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96a68b449953411a919eea06547a3b4a1ee6195b41ada68d432826caeedb75bd"
+dependencies = [
+ "cc",
+ "libc",
+ "pkg-config",
+]
 
 [[package]]
 name = "ordered-float"
