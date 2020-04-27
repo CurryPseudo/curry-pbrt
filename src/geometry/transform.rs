@@ -159,7 +159,7 @@ impl Transformable for Transform {
 impl ParseFromProperty for Transform {
     fn parse_from_property(type_name: &str, basic_types: &BasicTypes) -> Self {
         let fs = Vec::parse_from_property(type_name, basic_types);
-        let m = Matrix4::from_vec(fs).transpose();
+        let m = Matrix4::from_vec(fs);
         Self::from(m)
     }
     fn parse_default() -> Self {

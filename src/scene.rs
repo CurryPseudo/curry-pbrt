@@ -98,8 +98,7 @@ impl SceneParseStack {
                             .entry(object_name.clone())
                             .or_default()
                             .push(primitive);
-                    }
-                    else {
+                    } else {
                         scene.aggregate.add_primitive(primitive);
                     }
                 }
@@ -126,6 +125,9 @@ impl SceneParseStack {
             }
             "Texture" => {
                 self.texture_map.add_texture(property_set);
+            }
+            "Transform" => {
+                self.transform = Some(Transform::parse_from_segment(segment).unwrap());
             }
             _ => {
                 let this_transform = Transform::parse_from_segment(segment).unwrap();
