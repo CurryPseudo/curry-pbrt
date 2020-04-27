@@ -20,7 +20,10 @@ pub trait Material: Debug + Sync + Send {
 }
 
 pub fn parse_material<M: TextureMap>(property_set: &PropertySet, map: &M) -> Box<dyn Material> {
-    match property_set.get_name().unwrap() {
+    parse_material_with_type(property_set.get_name().unwrap(), property_set, map)
+}
+pub fn parse_material_with_type<M: TextureMap>(material_type: &str, property_set: &PropertySet, map: &M) -> Box<dyn Material> {
+    match material_type {
         "matte" => {
             let kd = get_texture(property_set, "Kd", map)
                 .unwrap_or_else(|| constant_texture(Spectrum::new(0.5)));
