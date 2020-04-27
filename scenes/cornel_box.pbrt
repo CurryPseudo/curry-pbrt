@@ -156,6 +156,7 @@ AttributeEnd
 #
 
 AttributeBegin
+   ConcatTransform [ 1. 0. 0. 30. 0. 1. 0. 0. 0. 0. 1. 0. 0. 0. 0. 1. ]
    Shape "trianglemesh"
    "integer indices" [ 0 1 2  2 3 0 ]
    "point P" [

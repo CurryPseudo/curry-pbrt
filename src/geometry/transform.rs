@@ -156,12 +156,31 @@ impl Transformable for Transform {
     }
 }
 
+impl ParseFromProperty for Transform {
+    fn parse_from_property(type_name: &str, basic_types: &BasicTypes) -> Self {
+        let fs = Vec::parse_from_property(type_name, basic_types);
+        let m = Matrix4::from_vec(fs).transpose();
+        Self::from(m)
+    }
+    fn parse_default() -> Self {
+        Transform::default()
+    }
+}
+
+impl ParseConsumeProperty for Transform {
+    fn consume_size() -> usize {
+        16
+    }
+}
+
 impl ParseFromBlockSegment for Transform {
     type T = Transform;
     fn parse_from_segment(segment: &BlockSegment) -> Option<Self::T> {
         let (transform_type, property_set) = segment.get_object()?;
         let mut property_set = property_set.clone();
         match transform_type {
+            "ConcatTransform" => Some(property_set.get_no_type_value().unwrap()),
+            "Transform" => Some(property_set.get_no_type_value().unwrap()),
             "Translate" => Some(Transform::translate(
                 property_set.get_no_type_value().unwrap(),
             )),

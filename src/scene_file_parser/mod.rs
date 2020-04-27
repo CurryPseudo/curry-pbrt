@@ -182,14 +182,14 @@ impl PropertySet {
     pub fn get_default<T: ParseFromProperty>(&self, name: &str) -> T {
         self.get_value(name).unwrap_or_else(T::parse_default)
     }
-    pub fn as_one_basic_types(&mut self, size: usize) -> Option<BasicTypes> {
+    pub fn as_one_basic_types(&mut self, mut size: usize) -> Option<BasicTypes> {
         let mut basic_type_vec = Vec::new();
-        for _ in 0..size {
+        while size > 0 {
             let basic_type = self.0.pop_front()?.into_basic_types();
-            if basic_type.0.len() != 1 {
-                return None;
+            for i in 0..min(size, basic_type.0.len()) {
+            basic_type_vec.push(basic_type.0[i].clone());
             }
-            basic_type_vec.push(basic_type.0[0].clone());
+            size -= basic_type.0.len();
         }
         Some(BasicTypes(basic_type_vec.into()))
     }
