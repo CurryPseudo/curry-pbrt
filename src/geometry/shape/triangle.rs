@@ -10,14 +10,19 @@ pub struct TriangleMesh {
     uvs: Option<Vec<Point2f>>,
 }
 impl TriangleMesh {
-    pub fn new(indices: Vec<usize>, vertices: Vec<Point3f>) -> Self {
+    pub fn new(
+        indices: Vec<usize>,
+        vertices: Vec<Point3f>,
+        normals: Option<Vec<Normal3f>>,
+        uvs: Option<Vec<Point2f>>,
+    ) -> Self {
         Self {
             n_indices: indices.len(),
             n_vertices: vertices.len(),
             indices,
             vertices,
-            normals: None,
-            uvs: None,
+            normals,
+            uvs,
         }
     }
 }

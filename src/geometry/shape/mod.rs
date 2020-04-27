@@ -1,12 +1,15 @@
+use std::path::PathBuf;
 use std::sync::Arc;
 use crate::*;
 mod sphere;
 mod transform;
 mod triangle;
+mod plymesh;
 use downcast_rs::DowncastSync;
 pub use sphere::*;
 pub use transform::*;
 pub use triangle::*;
+use plymesh::*;
 
 pub trait Shape: DowncastSync + std::fmt::Debug {
     fn area(&self) -> Float;
@@ -194,8 +197,12 @@ pub fn parse_shape(property_set: &PropertySet) -> Vec<Arc<dyn Shape>> {
         "trianglemesh" => {
             let indices = property_set.get_value("indices").unwrap();
             let vertices = property_set.get_value("P").unwrap();
-            let triangle_mesh = TriangleMesh::new(indices, vertices).into();
+            let triangle_mesh = TriangleMesh::new(indices, vertices, None, None).into();
             create_triangles(triangle_mesh)
+        }
+        "plymesh" => {
+            let path: PathBuf = property_set.get_value("filename").unwrap();
+            create_plymesh(&path)
         }
         _ => panic!(),
     }

@@ -243,19 +243,23 @@ impl Property {
             Token::String(s) => {
                 let words = s.split_whitespace().collect::<Vec<_>>();
                 if words.len() == 2 {
-                    if let Token::Array(_) = tokens[1].token {
-                        // TypedValue
-                        let words = s.split_whitespace().collect::<Vec<_>>();
-                        let type_name = String::from(words[0]);
-                        let name = String::from(words[1]);
-                        tokens.pop_front();
-                        let values = BasicTypes::from_lex(tokens);
-                        return Self::TypedValue {
-                            type_name,
-                            name,
-                            values,
-                        };
+                    match words[0] {
+                        "string" | "float" | "spectrum" | "texture" | "integer" | "rgb" | "point" => {
+                            // TypedValue
+                            let words = s.split_whitespace().collect::<Vec<_>>();
+                            let type_name = String::from(words[0]);
+                            let name = String::from(words[1]);
+                            tokens.pop_front();
+                            let values = BasicTypes::from_lex(tokens);
+                            return Self::TypedValue {
+                                type_name,
+                                name,
+                                values,
+                            };
+                        }
+                        _ => (),
                     }
+                    if let Token::Array(_) = tokens[1].token {}
                 }
                 // SingleString
                 let token_with_pos = tokens.pop_front().unwrap();

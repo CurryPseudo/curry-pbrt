@@ -1,4 +1,5 @@
 use crate::*;
+use indicatif::{ProgressBar, ProgressStyle};
 use ordered_float::OrderedFloat;
 use std::ops::Range;
 #[derive(Default)]
@@ -20,12 +21,17 @@ pub enum BVHNode {
 }
 
 impl BVHAggregate {
-    fn create_sah_node(&mut self, range: Range<usize>) -> usize {
+    fn create_sah_node<F: Fn(usize)>(
+        &mut self,
+        range: Range<usize>,
+        create_leaf_callback: &F,
+    ) -> usize {
         let len = range.end - range.start;
         assert!(len > 0);
         if len <= 1 {
             let r = self.nodes.len();
             self.nodes.push(BVHNode::Leaf(range));
+            create_leaf_callback(len);
             return r;
         }
         let full_bound = {
@@ -87,6 +93,7 @@ impl BVHAggregate {
             // construct leaf
             let r = self.nodes.len();
             self.nodes.push(BVHNode::Leaf(range));
+            create_leaf_callback(len);
             debug!("leaf has {} node", len);
             return r;
         }
@@ -103,8 +110,8 @@ impl BVHAggregate {
                 }
             }
         }
-        let left = self.create_sah_node(start..start + min_i + 1);
-        let right = self.create_sah_node(start + min_i + 1..start + len);
+        let left = self.create_sah_node(start..start + min_i + 1, create_leaf_callback);
+        let right = self.create_sah_node(start + min_i + 1..start + len, create_leaf_callback);
         let node = BVHNode::Parent {
             axis: min_axis,
             left,
@@ -131,8 +138,10 @@ impl BVHAggregate {
                 right,
                 bound,
             } => {
-                if bound.intersect_predicate_cached(ray) && (self.intersect_predicate_through_bound(*left, ray)
-                        || self.intersect_predicate_through_bound(*right, ray)) {
+                if bound.intersect_predicate_cached(ray)
+                    && (self.intersect_predicate_through_bound(*left, ray)
+                        || self.intersect_predicate_through_bound(*right, ray))
+                {
                     return true;
                 }
                 false
@@ -183,8 +192,15 @@ impl BVHAggregate {
 
 impl Aggregate for BVHAggregate {
     fn build(&mut self, primitives: Vec<Primitive>) {
+        let progress_bar = ProgressBar::new(primitives.len() as u64);
+        progress_bar.set_style(
+            ProgressStyle::default_bar()
+                .template("Building BVH {wide_bar} {percent}% ({eta_pricise})"),
+        );
         self.primitives = primitives;
-        self.root = self.create_sah_node(0..self.primitives.len());
+        self.root = self.create_sah_node(0..self.primitives.len(), &|leaf_count| {
+            progress_bar.inc(leaf_count as u64)
+        });
     }
     fn intersect_predicate(&self, ray: &Ray) -> bool {
         let ray = RayIntersectCache::from(*ray);
