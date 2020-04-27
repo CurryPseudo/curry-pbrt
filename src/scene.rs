@@ -1,4 +1,5 @@
 use crate::*;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 mod texture_map;
@@ -30,7 +31,8 @@ struct SceneParseStack {
     material: Option<Arc<dyn Material>>,
     transform: Option<Transform>,
     area_light_factory: Option<AreaLightFactory>,
-    texture_map: texture_map::TextureMap
+    texture_map: texture_map::TextureMap,
+    named_material: HashMap<String, Arc<dyn Material>>,
 }
 
 impl SceneParseStack {
@@ -44,8 +46,17 @@ impl SceneParseStack {
         }
         let (object_type, property_set) = segment.get_object().unwrap();
         match object_type {
+            "MakeNamedMaterial" => {
+                let (name, m) = parse_make_named_material(
+                    property_set,
+                    &self.texture_map,
+                    &self.named_material,
+                );
+                self.named_material.insert(String::from(name), m.into());
+            }
             "Material" => {
-                let m: Arc<dyn Material> = parse_material(property_set, &self.texture_map).into();
+                let m: Arc<dyn Material> =
+                    parse_material(property_set, &self.texture_map, &self.named_material).into();
                 self.material = Some(m.clone());
                 scene.materials.push(m);
             }

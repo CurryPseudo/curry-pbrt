@@ -215,7 +215,9 @@ AttributeEnd
 #
 
 AttributeBegin
-   Material "uber" 
+   MakeNamedMaterial "some_glass" "string type" ["glass"]
+   MakeNamedMaterial "some_uber" "string type" ["uber"]
+   Material "mix" "string namedmaterial1" ["some_glass"] "string namedmaterial2" ["some_uber"] "rgb amount" [0.5 0.5 0.5]
    Shape "trianglemesh"
    "integer indices" [
       3 2 0 2 1 0

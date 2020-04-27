@@ -46,6 +46,28 @@ pub trait BxDF {
     }
 }
 
+pub struct ScaledBxDF(Arc<dyn BxDF>, Spectrum);
+
+impl BxDF for ScaledBxDF {
+    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Option<Spectrum> {
+        self.0.f(wo, wi).map(|f| f * self.1)
+    }
+    fn sample_f(&self, wo: &Vector3f, u: &Point2f) -> (Vector3f, Option<Spectrum>, Float) {
+        let (wi, s, pdf) = self.0.sample_f(wo, u);
+        (wi, s.map(|f| f * self.1), pdf)
+    }
+    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+        self.0.pdf(wo, wi)
+    }
+    fn f_pdf(&self, wo: &Vector3f, wi: &Vector3f) -> (Option<Spectrum>, Float) {
+        let (f, pdf) = self.0.f_pdf(wo, wi);
+        (f.map(|f| f * self.1), pdf)
+    }
+    fn bxdf_type(&self) -> BxDFType {
+        self.0.bxdf_type()
+    }
+}
+
 pub struct BSDF {
     n: Vector3f,
     sn: Vector3f,
@@ -193,6 +215,58 @@ impl BSDF {
     pub fn is_all_delta(&self) -> bool {
         self.bxdfs.is_empty()
     }
+    pub fn mix(self, rhs: Self, scale: Spectrum) -> Self {
+        let s1 = scale;
+        let s2 = Spectrum::new(1.) - s1;
+        if s1.is_black() {
+            return rhs;
+        }
+        if s2.is_black() {
+            return self;
+        }
+        let mut bxdfs: Vec<Arc<dyn BxDF>> = Vec::new();
+        for bxdf in self.bxdfs {
+            bxdfs.push(Arc::new(ScaledBxDF(bxdf, s1)));
+        }
+        for bxdf in rhs.bxdfs {
+            bxdfs.push(Arc::new(ScaledBxDF(bxdf, s2)));
+        }
+        let mut reflect_bxdfs: Vec<Arc<dyn BxDF>> = Vec::new();
+        for bxdf in self.reflect_bxdfs {
+            reflect_bxdfs.push(Arc::new(ScaledBxDF(bxdf, s1)));
+        }
+        for bxdf in rhs.reflect_bxdfs {
+            reflect_bxdfs.push(Arc::new(ScaledBxDF(bxdf, s2)));
+        }
+        let mut transmit_bxdfs: Vec<Arc<dyn BxDF>> = Vec::new();
+        for bxdf in self.transmit_bxdfs {
+            transmit_bxdfs.push(Arc::new(ScaledBxDF(bxdf, s1)));
+        }
+        for bxdf in rhs.transmit_bxdfs {
+            transmit_bxdfs.push(Arc::new(ScaledBxDF(bxdf, s2)));
+        }
+        let mut delta_bxdfs: Vec<Arc<dyn DeltaBxDF>> = Vec::new();
+        for bxdf in self.delta_bxdfs {
+            delta_bxdfs.push(Arc::new(ScaledDeltaBxDF(bxdf, s1)));
+        }
+        for bxdf in rhs.delta_bxdfs {
+            delta_bxdfs.push(Arc::new(ScaledDeltaBxDF(bxdf, s2)));
+        }
+        let n = self.n;
+        let sn = self.sn;
+        let snx = self.snx;
+        let sny = self.sny;
+        Self {
+            n,
+            sn,
+            snx,
+            sny,
+            bxdfs,
+            reflect_bxdfs,
+            transmit_bxdfs,
+            delta_bxdfs,
+        }
+    }
 }
 
 pub trait DeltaBxDF {
@@ -215,5 +289,12 @@ impl<T: DeltaBxDF> BxDF for T {
     }
     fn bxdf_type(&self) -> BxDFType {
         BxDFType::Delta
+    }
+}
+pub struct ScaledDeltaBxDF(Arc<dyn DeltaBxDF>, Spectrum);
+
+impl DeltaBxDF for ScaledDeltaBxDF {
+    fn sample_f(&self, wo: &Vector3f) -> Option<(Vector3f, Spectrum)> {
+        self.0.sample_f(wo).map(|(wi, f)| (wi, f * self.1))
     }
 }
