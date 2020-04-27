@@ -30,7 +30,7 @@ pub trait BxDF {
                     wi.z *= -1.;
                 }
             }
-            _ => ()
+            _ => (),
         };
         let f = self.f(wo, &wi);
         (wi, f, pdf)
@@ -61,7 +61,7 @@ impl BSDF {
     pub fn new(n: Normal3f, sn: Normal3f) -> Self {
         let sn = sn.into();
         let (snx, sny) = coordinate_system(&sn);
-        let n = n.x * snx + n.y * sny + n.z * sn;
+        let n = Vector3f::new(n.dot(&snx), n.dot(&sny), n.dot(&sn)).normalize();
         Self {
             n,
             sn,
@@ -81,7 +81,8 @@ impl BSDF {
             snx.x * w.x + sny.x * w.y + sn.x * w.z,
             snx.y * w.x + sny.y * w.y + sn.y * w.z,
             snx.z * w.x + sny.z * w.y + sn.z * w.z,
-        ).normalize()
+        )
+        .normalize()
     }
     fn world_to_local(&self, w: &Vector3f) -> Vector3f {
         Vector3f::new(w.dot(&self.snx), w.dot(&self.sny), w.dot(&self.sn)).normalize()
@@ -156,7 +157,7 @@ impl BSDF {
         }
         let wo = self.world_to_local(wo);
         let wi = self.world_to_local(wi);
-        let reflect = wo.z * wi.z > 0.;
+        let reflect = wo.dot(&self.n) * wi.dot(&self.n) > 0.;
         let mut f = None;
         let mut pdf = 0.;
         let bxdfs = if reflect {
