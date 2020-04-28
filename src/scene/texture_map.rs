@@ -32,15 +32,19 @@ impl TextureMap {
                 .unwrap(),
         );
         match texture_type.as_str() {
-            "float" => self.map.insert(
-                name,
-                ImageTexture::<Float>::from_file(&Path::new(&file_name)),
-            ),
-            "spectrum" => self.map.insert(name, {
-                let mut texture = ImageTexture::<Spectrum>::from_file(&Path::new(&file_name));
-                texture.apply_inverse_gamma_correct();
-                texture
-            }),
+            "float" => {
+                self.map.insert(
+                    name,
+                    ImageTexture::<Float>::from_file(&Path::new(&file_name)),
+                );
+            }
+            "spectrum" => {
+                self.map.insert(name, {
+                    let mut texture = ImageTexture::<Spectrum>::from_file(&Path::new(&file_name));
+                    texture.apply_inverse_gamma_correct();
+                    texture
+                });
+            }
             _ => panic!(),
         }
     }
