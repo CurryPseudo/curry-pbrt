@@ -144,9 +144,9 @@ impl BlockSegment {
     }
 }
 
-pub trait ParseFromBlockSegment {
+pub trait ParseFromBlockSegment<'a> {
     type T;
-    fn parse_from_segment(segment: &BlockSegment) -> Option<Self::T>;
+    fn parse_from_segment(segment: &'a BlockSegment) -> Option<Self::T>;
 }
 #[derive(Debug, Clone)]
 pub struct PropertySet(VecDeque<Property>);

@@ -2,7 +2,9 @@ use crate::*;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+mod clipper;
 mod texture_map;
+use clipper::*;
 
 #[derive(Default)]
 pub struct Scene {
@@ -42,20 +44,21 @@ impl SceneParseStack {
         segment: &BlockSegment,
         scene: &mut Scene,
         objects: &mut HashMap<String, Vec<Primitive>>,
+        clipper: Option<&dyn PrimitiveClipper>,
     ) {
         if let Some((block_type, block_name, segments)) = segment.as_block() {
             match block_type {
                 "Attribute" => {
                     let mut attribute_stack = self.clone();
                     for segment in segments {
-                        attribute_stack.parse(segment, scene, objects);
+                        attribute_stack.parse(segment, scene, objects, clipper);
                     }
                 }
                 "Object" => {
                     let mut object_stack = self.clone();
                     object_stack.object_name = Some(block_name.as_ref().unwrap().clone());
                     for segment in segments {
-                        object_stack.parse(segment, scene, objects);
+                        object_stack.parse(segment, scene, objects, clipper);
                     }
                 }
                 _ => panic!(),
@@ -150,16 +153,27 @@ impl SceneParseStack {
     }
 }
 
-impl ParseFromBlockSegment for Scene {
-    type T = Scene;
-    fn parse_from_segment(segment: &BlockSegment) -> Option<Self::T> {
-        let (_, block_segments) = segment.get_block("World")?;
+pub struct SceneBuilder<'a> {
+    segments: &'a Vec<BlockSegment>,
+}
+
+impl<'a> SceneBuilder<'a> {
+    pub fn build_with_clipper(&self, clipper: Option<&dyn PrimitiveClipper>) -> Scene {
         let mut scene = Scene::default();
         let mut scene_parse_stack = SceneParseStack::default();
         let mut objects = HashMap::new();
-        for segment in block_segments {
-            scene_parse_stack.parse(segment, &mut scene, &mut objects);
+        for segment in self.segments {
+            scene_parse_stack.parse(segment, &mut scene, &mut objects, clipper);
         }
-        Some(scene)
+        scene
+    }
+}
+
+impl<'a> ParseFromBlockSegment<'a> for SceneBuilder<'a> {
+    type T = SceneBuilder<'a>;
+    fn parse_from_segment(segment: &'a BlockSegment) -> Option<Self::T> {
+        let (_, block_segments) = segment.get_block("World")?;
+        Some(SceneBuilder{segments: block_segments})
+
     }
 }

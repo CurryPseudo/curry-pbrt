@@ -9,7 +9,7 @@ pub trait Camera: DowncastSync {
 
 impl_downcast!(sync Camera);
 
-impl ParseFromBlockSegment for Box<dyn Camera> {
+impl ParseFromBlockSegment<'_> for Box<dyn Camera> {
     type T = Box<dyn Fn(Vector2u) -> Box<dyn Camera>>;
     fn parse_from_segment(
         segment: &BlockSegment,

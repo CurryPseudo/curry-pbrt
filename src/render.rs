@@ -49,12 +49,11 @@ pub fn render(
     film.into_inner().unwrap()
 }
 
-fn parse_find_eat<R: ParseFromBlockSegment>(
-    segments: &mut VecDeque<BlockSegment>,
+fn parse_find_eat<'a, R: ParseFromBlockSegment<'a>>(
+    segments: &'a mut VecDeque<BlockSegment>,
 ) -> Option<R::T> {
-    for i in 0..segments.len() {
-        if let Some(r) = R::parse_from_segment(&segments[i]) {
-            segments.remove(i);
+    for segment in segments {
+        if let Some(r) = R::parse_from_segment(segment) {
             return Some(r);
         }
     }
@@ -74,7 +73,8 @@ pub fn render_from_file(path: &Path) {
     let sampler = sampler_factory(resolution);
     let integrator = parse_find_eat::<Box<dyn Integrator>>(&mut segments).unwrap();
     let aggregate = Box::new(BVHAggregate::default());
-    let mut scene = parse_find_eat::<Scene>(&mut segments).unwrap();
+    let scene_builder = parse_find_eat::<SceneBuilder>(&mut segments).unwrap();
+    let mut scene = scene_builder.build_with_clipper(None);
     scene.build_aggregate(aggregate);
     let film = render(scene, sampler, integrator, film, camera);
     film.write_image(&Path::new(file_name.as_str()));

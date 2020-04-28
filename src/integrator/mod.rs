@@ -95,7 +95,7 @@ pub fn uniform_sample_one_light(
     }
     l
 }
-impl ParseFromBlockSegment for Box<dyn Integrator> {
+impl ParseFromBlockSegment<'_> for Box<dyn Integrator> {
     type T = Box<dyn Integrator>;
     fn parse_from_segment(segment: &BlockSegment) -> Option<Self::T> {
         let property_set = segment.get_object_by_type("Integrator")?;

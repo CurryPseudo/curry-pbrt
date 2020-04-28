@@ -43,7 +43,7 @@ pub trait Sampler: Sync + Send {
     fn get_sample_per_pixel(&self) -> usize;
 }
 
-impl ParseFromBlockSegment for Box<dyn Sampler> {
+impl ParseFromBlockSegment<'_> for Box<dyn Sampler> {
     type T = Box<dyn FnOnce(Vector2u) -> Box<dyn Sampler>>;
     fn parse_from_segment(segment: &BlockSegment) -> Option<Self::T> {
         let property_set = segment.get_object_by_type("Sampler")?;

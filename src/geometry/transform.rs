@@ -173,7 +173,7 @@ impl ParseConsumeProperty for Transform {
     }
 }
 
-impl ParseFromBlockSegment for Transform {
+impl ParseFromBlockSegment<'_> for Transform {
     type T = Transform;
     fn parse_from_segment(segment: &BlockSegment) -> Option<Self::T> {
         let (transform_type, property_set) = segment.get_object()?;

@@ -103,10 +103,10 @@ impl Renderable for Film {
     }
 }
 
-impl ParseFromBlockSegment for Film {
+impl ParseFromBlockSegment<'_> for Film {
     type T = (Film, String, Vector2u);
     fn parse_from_segment(segment: &BlockSegment) -> Option<Self::T> {
-        let property_set = segment.get_object_by_type("Film").unwrap();
+        let property_set = segment.get_object_by_type("Film")?;
         if property_set.get_name().unwrap() == "image" {
             let x_resolution = property_set.get_value("xresolution").unwrap_or(640);
             let y_resolution = property_set.get_value("yresolution").unwrap_or(480);
