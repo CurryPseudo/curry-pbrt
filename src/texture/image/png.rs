@@ -18,6 +18,7 @@ impl ImageFileReader for PngImageFileReader {
                 to_rgb(buf[i * 3 + 2]),
             ]));
         }
+        info!("Loaded png texture {}", file_path.to_str().unwrap());
         (resolution, s)
     }
 }

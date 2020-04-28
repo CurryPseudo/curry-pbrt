@@ -192,6 +192,9 @@ impl BVHAggregate {
 
 impl Aggregate for BVHAggregate {
     fn build(&mut self, primitives: Vec<Primitive>) {
+        if primitives.is_empty() {
+            return;
+        }
         let progress_bar = ProgressBar::new(primitives.len() as u64);
         progress_bar.set_style(
             ProgressStyle::default_bar()
@@ -203,10 +206,16 @@ impl Aggregate for BVHAggregate {
         });
     }
     fn intersect_predicate(&self, ray: &Ray) -> bool {
+        if self.nodes.is_empty() {
+            return false;
+        }
         let ray = RayIntersectCache::from(*ray);
         self.intersect_predicate_through_bound(self.root, &ray)
     }
     fn intersect(&self, ray: &Ray) -> Option<PrimitiveIntersect> {
+        if self.nodes.is_empty() {
+            return None;
+        }
         let mut ray = RayIntersectCache::from(*ray);
         self.intersect_through_bound(self.root, &mut ray)
     }
