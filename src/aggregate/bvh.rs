@@ -60,9 +60,9 @@ impl BVHAggregate {
                     self.primitives[sort_by_axis_index[len - 1 - i] + start].bound();
                 if let Some(last_forward) = bound_forward.last() {
                     let last_forward = last_forward.clone();
-                    bound_forward.push(last_forward | this_forward_bound);
+                    bound_forward.push(last_forward | &this_forward_bound);
                     bound_backward
-                        .push(bound_backward.last().unwrap().clone() | this_backward_bound);
+                        .push(bound_backward.last().unwrap().clone() | &this_backward_bound);
                 } else {
                     bound_forward.push(this_forward_bound.clone());
                     bound_backward.push(this_backward_bound.clone());
