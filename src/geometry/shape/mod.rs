@@ -1,15 +1,15 @@
+use crate::*;
 use std::path::PathBuf;
 use std::sync::Arc;
-use crate::*;
+mod plymesh;
 mod sphere;
 mod transform;
 mod triangle;
-mod plymesh;
 use downcast_rs::DowncastSync;
+use plymesh::*;
 pub use sphere::*;
 pub use transform::*;
 pub use triangle::*;
-use plymesh::*;
 
 pub trait Shape: DowncastSync + std::fmt::Debug {
     fn area(&self) -> Float;
@@ -46,8 +46,7 @@ pub trait Shape: DowncastSync + std::fmt::Debug {
         let pdf = distance_2 / ((d / distance).dot(&shape_point.n).abs() * self.area());
         if pdf.is_nan() || pdf.is_infinite() {
             0.
-        }
-        else {
+        } else {
             pdf
         }
     }
@@ -89,6 +88,14 @@ pub fn shape_apply(shape: Arc<dyn Shape>, transform: &Transform) -> Arc<dyn Shap
         Ok(transfrom_shape) => Arc::new(transfrom_shape.as_ref().clone().apply(transform)),
         Err(shape) => Arc::new(TransformShape::from(shape).apply(transform)),
     }
+}
+
+pub fn shapes_apply(shapes: Vec<Arc<dyn Shape>>, transform: Transform) -> Vec<Arc<dyn Shape>> {
+    let mut r: Vec<Arc<dyn Shape>> = Vec::new();
+    for shape in shapes {
+        r.push(Arc::new(TransformShape::new(shape, transform.clone())));
+    }
+    r
 }
 
 #[derive(Clone, Copy, Debug)]

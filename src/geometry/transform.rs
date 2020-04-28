@@ -1,11 +1,12 @@
+use std::sync::Arc;
 use crate::*;
 use nalgebra::Matrix4;
 use std::fmt::Display;
 
 #[derive(Debug, Clone)]
 pub struct Transform {
-    pub m: Matrix4<Float>,
-    pub m_inv: Matrix4<Float>,
+    pub m: Arc<Matrix4<Float>>,
+    pub m_inv: Arc<Matrix4<Float>>,
 }
 
 impl Display for Transform {
@@ -16,10 +17,10 @@ impl Display for Transform {
 
 impl Transform {
     pub fn new(m: Matrix4<Float>, m_inv: Matrix4<Float>) -> Self {
-        Self { m, m_inv }
+        Self { m: Arc::new(m), m_inv: Arc::new(m_inv) }
     }
     pub fn inverse(self) -> Self {
-        Self::new(self.m_inv, self.m)
+        Self{m: self.m_inv, m_inv: self.m}
     }
     pub fn transpose(self) -> Self {
         Self::new(self.m.transpose(), self.m_inv.transpose())
@@ -57,10 +58,7 @@ impl Transform {
             0.,
             1.,
         );
-        Self {
-            m,
-            m_inv: m.transpose(),
-        }
+        Self::new(m, m.transpose())
     }
     pub fn translate(delta: Vector3f) -> Self {
         Self::new(
@@ -139,10 +137,7 @@ impl From<Matrix4<Float>> for Transform {
 impl Default for Transform {
     fn default() -> Self {
         let identity = Matrix4::identity();
-        Self {
-            m: identity,
-            m_inv: identity,
-        }
+        Self::new(identity, identity)
     }
 }
 
@@ -152,7 +147,7 @@ pub trait Transformable {
 
 impl Transformable for Transform {
     fn apply(self, transform: &Transform) -> Self {
-        Self::new(transform.m * self.m, self.m_inv * transform.m_inv)
+        Self::new(transform.m.as_ref() * self.m.as_ref(), self.m_inv.as_ref() * transform.m_inv.as_ref())
     }
 }
 

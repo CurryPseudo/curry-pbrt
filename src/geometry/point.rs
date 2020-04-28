@@ -9,7 +9,7 @@ pub type Point3i = nalgebra::Point3<Integer>;
 
 impl Transformable for Point3f {
     fn apply(self, transform: &Transform) -> Self {
-        Self::from_homogeneous(transform.m * self.to_homogeneous()).unwrap()
+        Self::from_homogeneous(transform.m.as_ref() * self.to_homogeneous()).unwrap()
     }
 }
 impl ParseFromProperty for Point3f {

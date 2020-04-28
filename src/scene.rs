@@ -82,10 +82,12 @@ impl SceneParseStack {
                 scene.materials.push(m);
             }
             "Shape" => {
-                for mut shape in parse_shape(property_set) {
-                    if let Some(transform) = &self.transform {
-                        shape = shape_apply(shape, transform);
-                    }
+                let shapes = if let Some(transform) = &self.transform {
+                    shapes_apply(parse_shape(property_set), transform.clone())
+                } else {
+                    parse_shape(property_set)
+                };
+                for shape in shapes {
                     let primitive = if let Some(area_light_factory) = &self.area_light_factory {
                         let area_light: Arc<dyn Light> = area_light_factory(shape.clone()).into();
                         scene.lights.push(area_light.clone());
@@ -117,11 +119,13 @@ impl SceneParseStack {
             "ObjectInstance" => {
                 let object_name = property_set.get_name().unwrap();
                 if let Some(primitives) = objects.get(object_name) {
+                    let primitives = if let Some(transform) = &self.transform {
+                        primitives_apply(primitives.clone(), transform.clone())
+                    }
+                    else {
+                        primitives.clone()
+                    };
                     for primitive in primitives {
-                        let mut primitive = primitive.clone();
-                        if let Some(transform) = &self.transform {
-                            primitive = primitive.apply(transform);
-                        }
                         let mut clip = false;
                         if let Some(clipper) = clipper {
                             if clipper.clip(&primitive) {
@@ -189,7 +193,8 @@ impl<'a> ParseFromBlockSegment<'a> for SceneBuilder<'a> {
     type T = SceneBuilder<'a>;
     fn parse_from_segment(segment: &'a BlockSegment) -> Option<Self::T> {
         let (_, block_segments) = segment.get_block("World")?;
-        Some(SceneBuilder{segments: block_segments})
-
+        Some(SceneBuilder {
+            segments: block_segments,
+        })
     }
 }

@@ -1,5 +1,6 @@
 use crate::*;
 use std::sync::Arc;
+use std::collections::VecDeque;
 
 #[derive(Debug, Clone)]
 pub struct Primitive {
@@ -109,4 +110,21 @@ impl Transformable for Primitive {
     fn apply(self, transform: &Transform) -> Self {
         Self::new(shape_apply(self.shape, transform), self.source)
     }
+}
+
+pub fn primitives_apply(primitives: Vec<Primitive>, transform: Transform) -> Vec<Primitive> {
+    let mut shapes = Vec::new();
+    let mut sources = VecDeque::new();
+    for primitive in primitives {
+        shapes.push(primitive.shape);
+        sources.push_back(primitive.source);
+    }
+    let mut shapes: VecDeque<_> = shapes_apply(shapes, transform).into();
+    let mut r = Vec::new();
+    while !shapes.is_empty() {
+        let shape = shapes.pop_front().unwrap();
+        let sources = sources.pop_front().unwrap();
+        r.push(Primitive::new(shape, sources));
+    }
+    r
 }
