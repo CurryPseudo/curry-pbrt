@@ -38,7 +38,6 @@ pub fn create_triangles(mesh: Arc<TriangleMesh>) -> Vec<Arc<dyn Shape>> {
 #[derive(Clone, Debug)]
 pub struct Triangle {
     mesh: Arc<TriangleMesh>,
-    index: usize,
     v0: usize,
     v1: usize,
     v2: usize,
@@ -51,7 +50,6 @@ impl Triangle {
         let v2 = mesh.indices[index + 2];
         Self {
             mesh,
-            index,
             v0,
             v1,
             v2,
