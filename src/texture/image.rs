@@ -2,8 +2,8 @@ use crate::texture::image::exr::ExrImageFileReader;
 use crate::*;
 use std::fs::File;
 use std::path::Path;
-mod png;
 mod exr;
+mod png;
 use crate::texture::image::png::PngImageFileReader;
 
 pub trait ImageTextureContent {
@@ -57,32 +57,23 @@ impl<T: Clone + ImageTextureContent + Default> ImageTexture<T> {
 }
 
 pub trait ImageFileReader {
-    fn read_file(&self, file: File) -> (Vector2u, Vec<Spectrum>);
+    fn read_file(&self, file_path: &Path) -> (Vector2u, Vec<Spectrum>);
 }
 impl<T: Clone + ImageTextureContent> ImageTexture<T> {
     pub fn from_file(file_path: &Path) -> Self {
-        if let Ok(file) = File::open(file_path) {
-            let image_file_reader: Box<dyn ImageFileReader> = match file_path.extension().unwrap().to_str().unwrap() {
-                "png" => {
-                    Box::new(PngImageFileReader {})
-                }
-                "exr" => {
-                    Box::new(ExrImageFileReader {})
-                }
-                _ => panic!()
+        let image_file_reader: Box<dyn ImageFileReader> =
+            match file_path.extension().unwrap().to_str().unwrap() {
+                "png" => Box::new(PngImageFileReader {}),
+                "exr" => Box::new(ExrImageFileReader {}),
+                _ => panic!(),
             };
-            let (resolution, buf) = image_file_reader.read_file(file);
-            let mut vec = Vec::new();
-            for spectrum in buf {
-                vec.push(T::from_rgb_spectrum(spectrum));
-            }
-            Self {
-                pixels: FixedVec2D::from_vec(vec, resolution.x),
-            }
-        } else {
-            Self {
-                pixels: FixedVec2D::new(T::default(), Vector2u::new(1, 1)),
-            }
+        let (resolution, buf) = image_file_reader.read_file(file_path);
+        let mut vec = Vec::new();
+        for spectrum in buf {
+            vec.push(T::from_rgb_spectrum(spectrum));
+        }
+        Self {
+            pixels: FixedVec2D::from_vec(vec, resolution.x),
         }
     }
 }
@@ -104,4 +95,3 @@ impl<T: ImageTextureContent + Clone + std::marker::Sync + std::marker::Send + st
         self.pixels.clone()
     }
 }
-

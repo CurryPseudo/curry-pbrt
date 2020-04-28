@@ -1,5 +1,6 @@
 use crate::*;
 use derive_more::{Deref, Index, Into};
+use std::ops::DerefMut;
 use std::{
     fmt::Display,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
@@ -34,7 +35,7 @@ impl RGBSpectrum {
         self.0[0] == 0. && self.0[1] == 0. && self.0[2] == 0.
     }
     pub fn has_nan(&self) -> bool {
-        self.0[0].is_nan() || self.0[1].is_nan()|| self.0[2].is_nan()
+        self.0[0].is_nan() || self.0[1].is_nan() || self.0[2].is_nan()
     }
     pub fn to_option(self) -> Option<Self> {
         if self.is_black() {
@@ -93,6 +94,12 @@ impl RGBSpectrum {
             / (CIE_Y_INTEGRAL * N_CIE_SAMPLES as Float);
         xyz *= scale;
         xyz.to_rgb()
+    }
+}
+
+impl AsMut<[Float; 3]> for RGBSpectrum {
+    fn as_mut(&mut self) -> &mut [Float; 3] {
+        &mut self.0
     }
 }
 
