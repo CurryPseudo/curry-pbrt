@@ -42,13 +42,6 @@ pub struct Triangle {
     v0: usize,
     v1: usize,
     v2: usize,
-    p0: Point3f,
-    p1: Point3f,
-    p2: Point3f,
-    n: Normal3f,
-    uv0: Point2f,
-    uv1: Point2f,
-    uv2: Point2f,
 }
 
 impl Triangle {
@@ -56,46 +49,38 @@ impl Triangle {
         let v0 = mesh.indices[index];
         let v1 = mesh.indices[index + 1];
         let v2 = mesh.indices[index + 2];
-        let p0 = mesh.vertices[v0];
-        let p1 = mesh.vertices[v1];
-        let p2 = mesh.vertices[v2];
-        let (uv0, uv1, uv2) = if let Some(uvs) = &mesh.uvs {
-            (uvs[v0], uvs[v1], uvs[v2])
-        } else {
-            (
-                Point2f::new(0., 0.),
-                Point2f::new(1., 0.),
-                Point2f::new(1., 1.),
-            )
-        };
-        let (dp02, dp12) = (p0 - p2, p1 - p2);
-        let n = Normal3f::from(dp02.cross(&dp12).normalize());
         Self {
             mesh,
             index,
             v0,
             v1,
             v2,
-            p0,
-            p1,
-            p2,
-            uv0,
-            uv1,
-            uv2,
-            n,
         }
     }
     pub fn indices(&self) -> (usize, usize, usize) {
         (self.v0, self.v1, self.v2)
     }
-    pub fn vertices(&self) -> (&Point3f, &Point3f, &Point3f) {
-        (&self.p0, &self.p1, &self.p2)
+    pub fn vertices(&self) -> (Point3f, Point3f, Point3f) {
+        let p0 = self.mesh.vertices[self.v0];
+        let p1 = self.mesh.vertices[self.v1];
+        let p2 = self.mesh.vertices[self.v2];
+        (p0, p1, p2)
     }
-    pub fn uv(&self) -> (&Point2f, &Point2f, &Point2f) {
-        (&self.uv0, &self.uv1, &self.uv2)
+    pub fn uv(&self) -> (Point2f, Point2f, Point2f) {
+        if let Some(uvs) = &self.mesh.uvs {
+            (uvs[self.v0], uvs[self.v1], uvs[self.v2])
+        } else {
+            (
+                Point2f::new(0., 0.),
+                Point2f::new(1., 0.),
+                Point2f::new(1., 1.),
+            )
+        }
     }
-    fn normal(&self) -> &Normal3f {
-        &self.n
+    fn normal(&self) -> Normal3f {
+        let (p0, p1, p2) = self.vertices();
+        let (dp02, dp12) = (p0 - p2, p1 - p2);
+        Normal3f::from(dp02.cross(&dp12).normalize())
     }
     fn uv_interpolate(&self, b0: Float, b1: Float, b2: Float) -> Point2f {
         let (uv0, uv1, uv2) = self.uv();
@@ -113,7 +98,7 @@ impl Triangle {
     ) -> (Point3f, Normal3f, Point2f) {
         (
             self.point_interpolate(b0, b1, b2),
-            *self.normal(),
+            self.normal(),
             self.uv_interpolate(b0, b1, b2),
         )
     }
@@ -130,8 +115,8 @@ impl Shape for Triangle {
     }
     fn bound(&self) -> Bounds3f {
         let (p0, p1, p2) = self.vertices();
-        let mut bound = Bounds3f::new(p0, p1);
-        bound = bound | p2;
+        let mut bound = Bounds3f::new(&p0, &p1);
+        bound = bound | &p2;
         bound
     }
     fn sample(&self, sampler: &mut dyn Sampler) -> (ShapePoint, Float) {

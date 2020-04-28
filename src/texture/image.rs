@@ -1,6 +1,5 @@
 use crate::texture::image::exr::ExrImageFileReader;
 use crate::*;
-use std::fs::File;
 use std::path::Path;
 mod exr;
 mod png;

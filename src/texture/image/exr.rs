@@ -1,6 +1,5 @@
 use crate::*;
 use exr::prelude::*;
-use std::fs::File;
 use std::path::Path;
 pub struct ExrImageFileReader {}
 
