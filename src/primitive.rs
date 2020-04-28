@@ -61,6 +61,9 @@ impl Primitive {
     pub fn bound(&self) -> Bounds3f {
         self.shape.bound()
     }
+    pub fn get_source(&self) -> &PrimitiveSource {
+        &self.source
+    }
 }
 pub struct PrimitiveIntersect {
     shape_intersect: ShapeIntersect,

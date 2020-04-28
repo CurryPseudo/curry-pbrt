@@ -4,6 +4,7 @@ use crate::*;
 #[derive(Clone)]
 pub struct PerspectiveCamera {
     raster_to_camera: Transform,
+    resolution: Vector2f,
 }
 
 impl PerspectiveCamera {
@@ -40,6 +41,33 @@ impl PerspectiveCamera {
         let camera_to_raster = camera_to_screen.apply(&screen_to_raster);
         Self {
             raster_to_camera: camera_to_raster.inverse(),
+            resolution,
+        }
+    }
+}
+
+impl PrimitiveClipper for PerspectiveCamera {
+    fn clip(&self, primitive: &Primitive) -> bool {
+        if primitive.get_source().get_material().is_some() {
+            let bound = primitive.bound();
+            let camera_to_raster = self.raster_to_camera.clone().inverse();
+            for corner in 0..8 {
+                let p = bound[corner];
+                let raster = p.apply(&camera_to_raster);
+                let clip = 
+                    //raster.z > 1.
+                    raster.z < 0.
+                    ||raster.x >= self.resolution.x
+                    || raster.x < 0.
+                    || raster.y >= self.resolution.y
+                    || raster.y < 0.;
+                if !clip {
+                    return false;
+                }
+            }
+            true
+        } else {
+            false
         }
     }
 }
@@ -49,6 +77,9 @@ impl Camera for PerspectiveCamera {
         let film = Point3f::new(film.x, film.y, 0.);
         let camera = film.apply(&self.raster_to_camera);
         Ray::new_od(Point3f::new(0., 0., 0.), camera.coords.normalize())
+    }
+    fn as_clipper(&self) -> &dyn PrimitiveClipper {
+        self
     }
 }
 

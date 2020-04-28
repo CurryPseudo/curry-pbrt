@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 mod clipper;
 mod texture_map;
-use clipper::*;
+pub use clipper::*;
 
 #[derive(Default)]
 pub struct Scene {
@@ -102,7 +102,15 @@ impl SceneParseStack {
                             .or_default()
                             .push(primitive);
                     } else {
-                        scene.aggregate.add_primitive(primitive);
+                        let mut clip = false;
+                        if let Some(clipper) = clipper {
+                            if clipper.clip(&primitive) {
+                                clip = true;
+                            }
+                        }
+                        if !clip {
+                            scene.aggregate.add_primitive(primitive);
+                        }
                     }
                 }
             }
@@ -114,7 +122,15 @@ impl SceneParseStack {
                         if let Some(transform) = &self.transform {
                             primitive = primitive.apply(transform);
                         }
-                        scene.aggregate.add_primitive(primitive);
+                        let mut clip = false;
+                        if let Some(clipper) = clipper {
+                            if clipper.clip(&primitive) {
+                                clip = true;
+                            }
+                        }
+                        if !clip {
+                            scene.aggregate.add_primitive(primitive);
+                        }
                     }
                 }
             }
