@@ -1,5 +1,8 @@
 use crate::texture::image::exr::ExrImageFileReader;
 use crate::*;
+use ::png::{BitDepth, ColorType, Encoder, HasParameters};
+use std::fs::File;
+use std::io::BufWriter;
 use std::path::Path;
 mod exr;
 mod png;
@@ -48,6 +51,12 @@ pub struct ImageTexture<T> {
     pixels: FixedVec2D<T>,
 }
 
+impl<T> From<FixedVec2D<T>> for ImageTexture<T> {
+    fn from(pixels: FixedVec2D<T>) -> Self {
+        Self { pixels }
+    }
+}
+
 impl<T: Clone + ImageTextureContent + Default> ImageTexture<T> {
     pub fn apply_inverse_gamma_correct(&mut self) {
         let pixels = std::mem::take(&mut self.pixels);
@@ -92,5 +101,35 @@ impl<T: ImageTextureContent + Clone + std::marker::Sync + std::marker::Send + st
     }
     fn pixels(&self) -> FixedVec2D<T> {
         self.pixels.clone()
+    }
+}
+
+impl ImageTexture<Spectrum> {
+    pub fn into_file(self, file_path: &Path) {
+        let file = File::create(file_path).unwrap();
+        let w = BufWriter::new(file);
+        let resolution = self.pixels.size();
+        let mut encoder = Encoder::new(w, resolution.x as u32, resolution.y as u32);
+        encoder.set(ColorType::RGB).set(BitDepth::Eight);
+        let mut writer = encoder.write_header().unwrap();
+        let mut data = Vec::new();
+        let mut floats = Vec::new();
+        for pixel in self.pixels {
+            let [r, g, b]: [Float; 3] = pixel.into();
+            floats.push(r);
+            floats.push(g);
+            floats.push(b);
+        }
+        for float in floats {
+            data.push(clamp(float * 255. + 0.5, 0., 255.) as u8);
+        }
+        writer.write_image_data(&data).unwrap()
+    }
+    pub fn post_effect<F: Fn(&FixedVec2D<Spectrum>, Point2u) -> Spectrum>(&self, f: F) -> Self {
+        let mut pixels = FixedVec2D::new(Spectrum::new(0.), self.pixels.size());
+        for point in pixels.iter_points() {
+            pixels[point] = f(&self.pixels, point);
+        }
+        ImageTexture::from(pixels)
     }
 }

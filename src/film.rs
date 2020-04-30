@@ -1,7 +1,5 @@
 use crate::*;
-use png::HasParameters;
-use png::{BitDepth, ColorType, Encoder};
-use std::{fmt::Debug, fs::File, io::BufWriter, path::Path};
+use std::{fmt::Debug, path::Path};
 
 pub trait Renderable {
     fn bound(&self) -> &Bounds2u;
@@ -35,37 +33,8 @@ impl Film {
         }
     }
     pub fn write_image(self, file_path: &Path) {
-        let file = File::create(file_path).unwrap();
-        let  w = BufWriter::new(file);
-        let resolution = self.pixels.size();
-        let mut encoder = Encoder::new(w, resolution.x as u32, resolution.y as u32);
-        encoder.set(ColorType::RGB).set(BitDepth::Eight);
-        let mut writer = encoder.write_header().unwrap();
-        let mut data = Vec::new();
-        let mut floats = Vec::new();
-        for pixel in self.pixels {
-            let [r, g, b]: [Float; 3] = pixel.into();
-            floats.push(r);
-            floats.push(g);
-            floats.push(b);
-        }
-        let mut f_min = None;
-        let mut f_max = None;
-        for float in &floats {
-            f_min = Some(f_min.map_or(*float, |f_min| min(f_min, *float)));
-            f_max = Some(f_max.map_or(*float, |f_max| max(f_max, *float)));
-        }
-        let _f_min = f_min.unwrap();
-        let _f_max = f_max.unwrap();
-        for float in floats {
-            data.push(clamp(
-                gamma_correct(float) * 255. + 0.5,
-                //gamma_correct(rlerp(float, 0., _f_max)) * 255. + 0.5,
-                0.,
-                255.,
-            ) as u8);
-        }
-        writer.write_image_data(&data).unwrap()
+        let s = ImageTexture::from(self.pixels.map(|s| s.map_move(gamma_correct)));
+        s.into_file(file_path);
     }
     pub fn gen_tiles(&self) -> Vec<FilmTile> {
         let tile_size = 16;

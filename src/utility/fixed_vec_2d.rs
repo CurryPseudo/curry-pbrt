@@ -50,6 +50,17 @@ impl<T> FixedVec2D<T> {
         }
         r
     }
+    pub fn iter_points(&self) -> Vec<Point2u> {
+        let size = self.size();
+        let mut r = Vec::new();
+        for j in 0..size.y {
+            for i in 0..size.x {
+                let p = Point2u::new(i, j);
+                r.push(p);
+            }
+        }
+        r
+    }
 }
 
 impl<T> Index<Point2u> for FixedVec2D<T> {
