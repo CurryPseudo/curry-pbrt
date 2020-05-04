@@ -4,7 +4,7 @@ use downcast_rs::DowncastSync;
 pub use perspective::*;
 
 pub trait Camera: DowncastSync + PrimitiveClipper {
-    fn generate_ray(&self, film: Point2f) -> Ray;
+    fn generate_ray(&self, film: Point2f, sampler: &mut dyn Sampler) -> Ray;
     fn as_clipper(&self) -> &dyn PrimitiveClipper;
 }
 
@@ -61,8 +61,8 @@ impl PrimitiveClipper for TransformCamera {
 }
 
 impl Camera for TransformCamera {
-    fn generate_ray(&self, film: Point2f) -> Ray {
-        self.camera.generate_ray(film).apply(&self.transform)
+    fn generate_ray(&self, film: Point2f, sampler: &mut dyn Sampler) -> Ray {
+        self.camera.generate_ray(film, sampler).apply(&self.transform)
     }
     fn as_clipper(&self) -> &dyn PrimitiveClipper {
         self

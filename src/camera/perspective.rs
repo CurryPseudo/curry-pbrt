@@ -44,6 +44,11 @@ impl PerspectiveCamera {
             resolution,
         }
     }
+    pub fn generate_ray_without_sampler(&self, film: Point2f) -> Ray {
+        let film = Point3f::new(film.x, film.y, 0.);
+        let camera = film.apply(&self.raster_to_camera);
+        Ray::new_od(Point3f::new(0., 0., 0.), camera.coords.normalize())
+    }
 }
 
 impl PrimitiveClipper for PerspectiveCamera {
@@ -73,10 +78,8 @@ impl PrimitiveClipper for PerspectiveCamera {
 }
 
 impl Camera for PerspectiveCamera {
-    fn generate_ray(&self, film: Point2f) -> Ray {
-        let film = Point3f::new(film.x, film.y, 0.);
-        let camera = film.apply(&self.raster_to_camera);
-        Ray::new_od(Point3f::new(0., 0., 0.), camera.coords.normalize())
+    fn generate_ray(&self, film: Point2f, _: &mut dyn Sampler) -> Ray {
+        self.generate_ray_without_sampler(film)
     }
     fn as_clipper(&self) -> &dyn PrimitiveClipper {
         self
@@ -95,7 +98,7 @@ mod tests {
         let film = camera_point.apply(&r);
         assert_eq!(film, Point3f::new(512., 384., 1.));
         assert_eq!(
-            camera.generate_ray(film.xy()),
+            camera.generate_ray_without_sampler(film.xy()),
             Ray::new_od(Point3f::new(0., 0., 0.), Vector3f::new(0., 0., 1.))
         );
     }
