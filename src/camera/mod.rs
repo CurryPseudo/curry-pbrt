@@ -1,7 +1,9 @@
+mod lens;
 mod perspective;
 use crate::*;
 use downcast_rs::DowncastSync;
 pub use perspective::*;
+pub use lens::*;
 
 pub trait Camera: DowncastSync + PrimitiveClipper {
     fn generate_ray(&self, film: Point2f, sampler: &mut dyn Sampler) -> Ray;
@@ -13,11 +15,11 @@ impl_downcast!(sync Camera);
 impl ParseFromBlockSegment<'_> for Box<dyn Camera> {
     type T = Box<dyn Fn(Vector2u) -> Box<dyn Camera>>;
     fn parse_from_segment(segment: &BlockSegment) -> Option<Self::T> {
-        let object_value = segment.get_object_by_type("Camera")?;
+        let object_value = segment.get_object_by_type("Camera")?.clone();
         if object_value.get_name().unwrap() == "perspective" {
             let fov = object_value.get_value("fov").unwrap_or(90.);
             Some(Box::new(move |resolution| {
-                Box::new(PerspectiveCamera::new(fov, resolution))
+                PerspectiveCamera::new(fov, resolution).with_lens(&object_value)
             }))
         } else {
             trace!("{:?}", segment);
