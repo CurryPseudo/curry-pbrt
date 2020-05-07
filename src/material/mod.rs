@@ -7,6 +7,7 @@ mod matte;
 mod mirror;
 mod translucent;
 mod uber;
+mod plastic;
 mod mix;
 
 pub use bxdf::*;
@@ -16,6 +17,7 @@ pub use mirror::*;
 use std::fmt::Debug;
 pub use translucent::*;
 pub use uber::*;
+pub use plastic::*;
 pub use mix::*;
 
 pub trait Material: Debug + Sync + Send {
@@ -74,6 +76,19 @@ pub fn parse_material_with_type<M: TextureMap>(
             let r = get_texture(property_set, "Kr", texture_map)
                 .unwrap_or_else(|| constant_texture(Spectrum::new(1.)));
             Box::new(MirrorMaterial::new(r))
+        }
+        "plastic" => {
+            let kd = get_texture(property_set, "Kd", texture_map)
+                .unwrap_or_else(|| constant_texture(Spectrum::new(0.25)));
+            let ks = get_texture(property_set, "Ks", texture_map)
+                .unwrap_or_else(|| constant_texture(Spectrum::new(0.25)));
+            let roughness = get_texture(property_set, "roughness", texture_map)
+                .unwrap_or_else(|| constant_texture(0.1));
+            Box::new(PlasticMaterial {
+                kd,
+                ks,
+                roughness,
+            })
         }
         "uber" => {
             let kd = get_texture(property_set, "Kd", texture_map)
