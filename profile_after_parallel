@@ -1,4 +1,0 @@
-Benchmark #1: cargo run --release --example render_from_file scenes/sphere.pbrt
-  Time (mean ± σ):     978.9 ms ±  10.6 ms    [User: 3.170 s, System: 0.028 s]
-  Range (min … max):   965.1 ms … 998.0 ms    10 runs
- 
