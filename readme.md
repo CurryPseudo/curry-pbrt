@@ -1,6 +1,6 @@
 # curry-pbrt
 
-An pbrt renderer implemented in rust.
+A pbrt renderer implemented in rust.
 
 ```bash
 mkdir image
